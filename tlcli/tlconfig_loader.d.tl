@@ -1,0 +1,10 @@
+
+global build_dir: function(dirname: string)
+global exclude: function(patterns: {string})
+global files: function(filenames: {string})
+global include: function(patterns: {string})
+global include_dir: function(filenames: {string})
+global preload_modules: function(modulenames: {string})
+global quiet: function(bool: boolean)
+global skip_compat53: function(bool: boolean)
+global source_dir: function(filename: string)
