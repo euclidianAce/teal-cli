@@ -54,6 +54,7 @@ local function fix_path_chunk(pathchunk: string): string
 end
 local function fix_path(path: string): string, string
    local fixed_path_components: {string} = {}
+   local not_relative = string.sub(path, 1, 1) == "/" --FIXME: windows
    for comp in fs.path_components(path) do
       if #comp > 0 then
          local fixed_comp = fix_path_chunk(comp)
@@ -63,13 +64,20 @@ local function fix_path(path: string): string, string
          table.insert(fixed_path_components, fixed_comp)
       end
    end
+   if not_relative then
+      table.insert(fixed_path_components, 1, "")
+   end
    return table.concat(fixed_path_components, path_separator)
 end
 
 function fs.path_concat(...: string): string
    local path = {}
    for i = 1, select("#", ...) do
-      local fname = assert(fix_path((select(i, ...))))
+      local raw_fname = select(i, ...)
+      if i > 1 and string.sub(raw_fname, 1, 1) == "/" then --FIXME: windows
+         error("Attempt to concatenate non relative paths")
+      end
+      local fname = assert(fix_path(raw_fname))
       if #fname > 0 then
          table.insert(path, fname)
       end

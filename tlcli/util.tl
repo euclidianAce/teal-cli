@@ -111,6 +111,20 @@ local function concat_errors(errs: {TealError}): string
    return table.concat(msgs, "\n")
 end
 
+function M.protected_proxy<T>(t: {string:any}): {string:any}
+   return setmetatable({}, {
+      __index = function(_: table, key: any): any
+         if not t[key as string] then
+            error("Attempt to __index protected table " .. tostring(t), 2)
+         end
+         return t[key as string]
+      end,
+      __newindex = function()
+         error("Attempt to __newindex protected table " .. tostring(t), 2)
+      end,
+   })
+end
+
 function M.teal.type_check_file(filename: string): boolean, string
    local lax = get_extension(filename) == "lua"
    local result = assert(tl.process(filename))

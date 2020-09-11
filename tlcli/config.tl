@@ -1,12 +1,12 @@
 local tl = require("tl")
 
 local fs = require("tlcli.fs")
+local lfs = require("lfs")
 
 local global_config_dir = os.getenv("XDG_CONFIG_HOME") or fs.path_concat(os.getenv("HOME"), ".config")
 local global_config_file = fs.path_concat(global_config_dir, "config.lua")
 
 local record GlobalConfig
-   exclude: {string}
    include_dir: {string}
    preload_modules: {string}
    quiet: boolean
@@ -35,7 +35,6 @@ local function make_global_loaders(): {string:function}, GlobalConfig
    local new_global_config: GlobalConfig = {}
    -- TODO: there could in the future be more processing with these options, but for now, we just set the config options
    local global_config_loaders = {
-      exclude = function(arg: {string}) new_global_config.exclude = arg end,
       include_dir = function(arg: {string}) new_global_config.include_dir = arg end,
       preload_modules = function(arg: {string}) new_global_config.preload_modules = arg end,
       quiet = function(arg: boolean) new_global_config.quiet = arg end,
@@ -61,10 +60,10 @@ local function make_local_loaders(): {string:function}, Config
    return config_loaders, new_config
 end
 
-function M.load_config_from_file(fname: string): Config, string
+function M.load_local_config(current_config: Config): Config, string
    local loaders, config = make_local_loaders()
    -- TODO: See if tl can expose its Variable and Env type so we can use tl.load with a custom environment to get type checking
-   local chunk, load_err = loadfile(fname, "t", setmetatable(_G, {__index = loaders}) as table) as (function, string)
+   local chunk, load_err = loadfile("tlconfig.tl", "t", setmetatable(_G, {__index = loaders}) as table) as (function, string)
    setmetatable(_G, nil)
    if load_err then
       return nil, load_err
@@ -76,9 +75,39 @@ function M.load_config_from_file(fname: string): Config, string
    return config
 end
 
+local user_home = os.getenv("HOME")
+function M.is_in_current_dir(fname: string): boolean
+   for file in lfs.dir(lfs.currentdir()) do
+      if file == fname then
+         return true
+      end
+   end
+end
+
+function M.find_project_root(): string, string
+   local orig_dir = lfs.currentdir()
+
+   local has_local_config = M.is_in_current_dir("tlconfig.tl")
+   while not has_local_config do
+      if lfs.currentdir() == user_home then
+         return
+      end
+      lfs.chdir("..")
+      has_local_config = M.is_in_current_dir("tlconfig.tl")
+   end
+   local root_dir = lfs.currentdir()
+   lfs.chdir(orig_dir)
+   return root_dir, orig_dir
+end
+
 function M.load_global_config(): GlobalConfig, string
    local loaders, config = make_global_loaders()
    local chunk, load_err = loadfile(global_config_file, "t", setmetatable(_G, {__index = loaders}) as table) as (function, string)
+   if load_err and not string.match(load_err, "No such file or directory$") then
+      return nil, load_err
+   else
+      return nil, nil
+   end
    local ok, call_err = pcall(chunk) as (boolean, string)
    if not ok then
       return nil, call_err
