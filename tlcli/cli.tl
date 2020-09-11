@@ -10,9 +10,28 @@ local log = require("tlcli.log")
 local Args = require("tlcli.types").Args
 local Command = require("tlcli.types").Command
 
+log.enable_level("debug")
 local M = {}
 
 local commands: {string:Command} = {}
+
+local function validate_command(parser: ArgparseParser, cmd: Command): boolean, string
+   if commands[cmd.name] then
+      return nil, "Command name clash with ".. cmd.name
+   end
+   if not cmd.name then
+      return nil, "Command doesn't have a name"
+   end
+   if not cmd.description then
+      return nil, "Command doesn't have a description"
+   end
+   local parser_cmd = parser:command(cmd.name, cmd.description)
+   if cmd.argparse then
+      cmd.argparse(parser_cmd)
+   end
+   commands[cmd.name] = cmd
+   return true
+end
 
 local function load_commands(parser: ArgparseParser)
    -- defaults
@@ -34,7 +53,6 @@ local cmd_path = os.getenv("XDG_CONFIG_HOME")
    or fs.path_concat(os.getenv("HOME"), ".config", "teal", "commands")
 
 local function load_user_command(parser: ArgparseParser, path: string): boolean, string
-   --log.debug("load_user_command called with parser %s and path %s", tostring(parser), path)
    local fh, ferr = io.open(fs.path_concat(cmd_path, path), "r")
    if not fh then
       return nil, ferr
@@ -51,12 +69,12 @@ local function load_user_command(parser: ArgparseParser, path: string): boolean,
       log.debug("pcall errored with %s", cmd as string)
       return nil, cmd as string
    end
-   if commands[cmd.name] then
-      log.error()
-      return nil, "Command name clash with ".. cmd.name
+   do
+      local ok, err = validate_command(parser, cmd)
+      if not ok then
+         log.error("Unable to validate command loaded from %s\n%s", path, err)
+      end
    end
-   cmd.argparse(parser:command(cmd.name, cmd.description))
-   commands[cmd.name] = cmd
    return true
 end
 
@@ -83,14 +101,20 @@ local function init_parser(): ArgparseParser
 
    load_commands(par)
 
-   for file in lfs.dir(cmd_path) do
-      if lfs.attributes(file, "mode") ~= "directory"
-         and file ~= "." and file ~= ".." then
-         local ok, err = load_user_command(par, file)
-         if not ok then
-            log.error("Failed to load user command from %s\n%s", fs.path_concat(cmd_path, file), err)
+   if lfs.attributes(cmd_path, "mode") == "directory" then
+      log.debug("found cmd_path at %s", cmd_path)
+      for file in lfs.dir(cmd_path) do
+         if lfs.attributes(file, "mode") ~= "directory"
+            and file ~= "." and file ~= ".." then
+            local ok, err = load_user_command(par, file)
+            if not ok then
+               log.error("Failed to load user command from %s\n%s", fs.path_concat(cmd_path, file), err)
+            end
          end
       end
+   else
+      -- TODO: create commands directory or something
+      log.debug("commands dir not found or is not a directory")
    end
 
    return par
@@ -107,13 +131,14 @@ local function load_config(): config.GlobalConfig, string
 end
 
 local p = init_parser()
-function M.get_args(): Args
-   return p:parse()
-end
 
 function M.do_the_thing()
-   log.enable_level("debug")
-   local args = M.get_args()
+   log.debug("Getting args from argparse")
+   local ok, args = p:pparse() as (boolean, Args)
+   if not ok then
+      log.normal(p:get_usage())
+      os.exit(1)
+   end
    if not args.command then
       log.normal(p:get_usage())
       os.exit(0)
