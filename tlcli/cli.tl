@@ -46,11 +46,17 @@ local function load_user_command(parser: ArgparseParser, path: string): boolean,
       log.debug("loadfile errored with %s", err)
       return nil, err
    end
-   local ok, res = pcall(cmd) as (boolean, string)
+   local ok, cmd = pcall(cmd) as (boolean, Command)
    if not ok then
-      log.debug("pcall errored with %s", res)
-      return nil, res
+      log.debug("pcall errored with %s", cmd as string)
+      return nil, cmd as string
    end
+   if commands[cmd.name] then
+      log.error()
+      return nil, "Command name clash with ".. cmd.name
+   end
+   cmd.argparse(parser:command(cmd.name, cmd.description))
+   commands[cmd.name] = cmd
    return true
 end
 
