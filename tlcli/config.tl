@@ -60,10 +60,10 @@ local function make_local_loaders(): {string:function}, Config
    return config_loaders, new_config
 end
 
-function M.load_local_config(current_config: Config): Config, string
+local function load_config_from_file(fname: string): Config, string
    local loaders, config = make_local_loaders()
    -- TODO: See if tl can expose its Variable and Env type so we can use tl.load with a custom environment to get type checking
-   local chunk, load_err = loadfile("tlconfig.tl", "t", setmetatable(_G, {__index = loaders}) as table) as (function, string)
+   local chunk, load_err = loadfile(fname, "t", setmetatable(_G, {__index = loaders}) as table) as (function, string)
    setmetatable(_G, nil)
    if load_err then
       return nil, load_err
@@ -76,9 +76,9 @@ function M.load_local_config(current_config: Config): Config, string
 end
 
 local user_home = os.getenv("HOME")
-function M.is_in_current_dir(fname: string): boolean
-   for file in lfs.dir(lfs.currentdir()) do
-      if file == fname then
+function M.is_in_dir(dirname: string, filename: string): boolean
+   for file in lfs.dir(dirname) do
+      if file == filename then
          return true
       end
    end
@@ -87,17 +87,25 @@ end
 function M.find_project_root(): string, string
    local orig_dir = lfs.currentdir()
 
-   local has_local_config = M.is_in_current_dir("tlconfig.tl")
+   -- TODO: we dont need to chdir here
+   -- so... dont
+
+   local has_local_config = M.is_in_dir(orig_dir, "tlconfig.tl")
    while not has_local_config do
       if lfs.currentdir() == user_home then
          return
       end
       lfs.chdir("..")
-      has_local_config = M.is_in_current_dir("tlconfig.tl")
+      has_local_config = M.is_in_dir(lfs.currentdir(), "tlconfig.tl")
    end
    local root_dir = lfs.currentdir()
    lfs.chdir(orig_dir)
    return root_dir, orig_dir
+end
+
+function M.load_local_config(): Config, string
+   local root = M.find_project_root()
+   return load_config_from_file(fs.path_concat(root, "tlconfig.tl"))
 end
 
 function M.load_global_config(): GlobalConfig, string
@@ -105,8 +113,8 @@ function M.load_global_config(): GlobalConfig, string
    local chunk, load_err = loadfile(global_config_file, "t", setmetatable(_G, {__index = loaders}) as table) as (function, string)
    if load_err and not string.match(load_err, "No such file or directory$") then
       return nil, load_err
-   else
-      return nil, nil
+   elseif load_err then
+      return {}, nil
    end
    local ok, call_err = pcall(chunk) as (boolean, string)
    if not ok then

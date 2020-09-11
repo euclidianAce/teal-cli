@@ -7,24 +7,26 @@ local config = require("tlcli.config")
 local fs = require("tlcli.fs")
 local log = require("tlcli.log")
 
+local Args = require("tlcli.types").Args
+local Command = require("tlcli.types").Command
+
 local M = {}
 
-local command_callbacks: {string:function} = {}
+local commands: {string:Command} = {}
 
 local function load_commands(parser: ArgparseParser)
    -- defaults
    local gen_cmd = require("tlcli.commands.gen")
    gen_cmd.argparse(parser:command(gen_cmd.name, gen_cmd.description))
-   command_callbacks[gen_cmd.name] = gen_cmd.command
+   commands[gen_cmd.name] = gen_cmd
 
    local check_cmd = require("tlcli.commands.check")
    check_cmd.argparse(parser:command(check_cmd.name, check_cmd.description))
-   command_callbacks[check_cmd.name] = check_cmd.command
+   commands[check_cmd.name] = check_cmd
 
    local run_cmd = require("tlcli.commands.run")
    run_cmd.argparse(parser:command(run_cmd.name, run_cmd.description))
-   command_callbacks[run_cmd.name] = run_cmd.command
-
+   commands[run_cmd.name] = run_cmd
 end
 
 local cmd_path = os.getenv("XDG_CONFIG_HOME")
@@ -52,18 +54,22 @@ local function load_user_command(parser: ArgparseParser, path: string): boolean,
    return true
 end
 
-function M.init_parser(): ArgparseParser
+local function init_parser(): ArgparseParser
    local par = argparse("tlc", "A cli to Teal, a minimalistic typed dialect of Lua.")
 
    par:option("-l --preload", "Execute the equivalent of require('modulename') before executing the Teal script(s).")
       :argname("<modulename>")
       :count("*")
+
    par:option("-I --include-dir", "Prepend this directory to the module search path.")
       :argname("<directory>")
       :count("*")
+
    par:flag("--skip-compat53", "Skip compat53 insertions.")
    par:flag("--version", "Print version and exit")
    par:flag("-q --quiet", "Do not print information messages to stdout. Errors may still be printed to stderr.")
+
+   -- This will probably be moved to the build command and maybe gen
    par:flag("-p --pretend", "Do not write to any files, print what files would be generated.")
 
    par:require_command(false)
@@ -94,12 +100,27 @@ local function load_config(): config.GlobalConfig, string
    local root_dir, orig_dir = config.find_project_root()
 end
 
-log.enable_level("debug")
-local p = M.init_parser()
-local args = p:parse()
-log.debug(require"inspect"(arg))
-log.debug(require"inspect"(args))
-log.debug("Command: %s\nCommand entry: %s", args.command, require"inspect"(command_callbacks[args.command as string]))
+local p = init_parser()
+function M.get_args(): Args
+   return p:parse()
+end
+
+function M.do_the_thing()
+   log.enable_level("debug")
+   local args = M.get_args()
+   if not args.command then
+      log.normal(p:get_usage())
+      os.exit(0)
+   end
+   local global_config = config.load_global_config()
+   local local_config = config.load_local_config()
+
+   log.debug(require"inspect"(arg))
+   log.debug(require"inspect"(args))
+   log.debug("Command: %s\nCommand entry: %s", args.command as string, require"inspect"(commands[args.command as string]))
+
+   os.exit(commands[args.command as string].command(args))
+end
 
 return M
 
