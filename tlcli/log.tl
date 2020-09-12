@@ -5,10 +5,12 @@ local M = {}
 
 local enabled: {string:boolean} = {
    ["normal"] = true,
+   ["warn"] = true,
    ["error"] = true,
 }
 local streams: {string:FILE} = setmetatable({
    ["error"] = io.stderr,
+   ["warn"] = io.stderr,
    ["debug"] = io.stderr,
 }, {
    __index = function(_: {string:FILE}, key: string): FILE
@@ -20,10 +22,11 @@ local b = ansi.bright
 local r = ansi.reset()
 
 local prefixes: {string:{string}} = setmetatable({
-   ["normal"]   = {b"cyan"  .. "  Teal" .. r .. ": ", "        "},
-   ["verbose"]  = {b"cyan"  .. " *Teal" .. r .. ": ", "        "},
-   ["error"]    = {b"red"   .. " Error" .. r .. ": ", "        "},
-   ["debug"]    = {b"green" .. " DEBUG" .. r .. ": ", "        "},
+   ["normal"]   = {b"cyan"    .. "  Teal" .. r .. ": ", b"cyan"    .. "   ...  " .. r},
+   ["verbose"]  = {b"cyan"    .. " *Teal" .. r .. ": ", b"cyan"    .. "   ...  " .. r},
+   ["warn"]     = {b"yellow"  .. "  Warn" .. r .. ": ", b"yellow"  .. "   ...  " .. r},
+   ["error"]    = {b"red"     .. " Error" .. r .. ": ", b"red"     .. "   ...  " .. r},
+   ["debug"]    = {b"green"   .. " DEBUG" .. r .. ": ", b"green"   .. "   ...  " .. r},
 }, { __index = function(): {string} return {"        ", "        "} end })
 
 function M.log(level: string, fmt: string, ...: any)
@@ -48,6 +51,7 @@ function M.toggle_level(level: string)  enabled[level] = not enabled[level] end
 function M.set_stream(level: string, fh: FILE) streams[level] = fh end
 
 function M.normal(fmt: string, ...: any) M.log("normal", fmt, ...) end
+function M.warn(fmt: string, ...: any)   M.log("warn", fmt, ...) end
 function M.error(fmt: string, ...: any)  M.log("error", fmt, ...) end
 function M.debug(fmt: string, ...: any)  M.log("debug", fmt, ...) end
 

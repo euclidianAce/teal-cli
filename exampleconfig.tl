@@ -1,7 +1,4 @@
 
-build_dir "build/tlcli"
-source_dir "tlcli"
-
 include_dir {
       os.getenv"HOME" .. "/dev/teal-types/types/inspect",
       os.getenv"HOME" .. "/dev/teal-types/types/luafilesystem",
@@ -11,3 +8,11 @@ include_dir {
 include { "**/*" }
 exclude { "testing/**/*" }
 
+build {
+	source_dir = "tlcli"
+	build_dir = "build/tlcli"
+}
+
+check {
+
+}

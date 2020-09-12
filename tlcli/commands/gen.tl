@@ -1,10 +1,13 @@
 
 local argparse = require("argparse")
+local fs = require("tlcli.fs")
 local log = require("tlcli.log")
 local util = require("tlcli.util")
 
-local Args = require("tlcli.types").Args
-local Command = require("tlcli.types").Command
+local types = require("tlcli.types")
+local Args = types.Args
+local Command = types.Command
+local Config = types.Config
 
 local gen: Command
 gen = {
@@ -17,7 +20,7 @@ gen = {
          :argname("<filename>")
    end,
 
-   command = function(args: Args): number
+   command = function(args: Args, cfg: Config): number
       local exit = 0
       for i, fname in ipairs(args["script"] as {string}) do
          local code, err = util.teal.compile(fname)
@@ -27,9 +30,9 @@ gen = {
                break
             end
          else
-            local fh, oerr = io.open(util.get_output_file_name(fname), "w")
+            local fh, oerr = io.open(fs.get_output_file_name(fname), "w")
             if not fh then
-               log.error("Unable to open %s: %s", util.get_output_file_name(fname), oerr)
+               log.error("Unable to open %s: %s", fs.get_output_file_name(fname), oerr)
                if not gen.options.keep_going then
                   exit = 1
                   break
@@ -38,13 +41,13 @@ gen = {
             local ok, werr = fh:write(code)
             fh:close()
             if not ok then
-               log.error("Unable to write to %s: %s", util.get_output_file_name(fname), werr)
+               log.error("Unable to write to %s: %s", fs.get_output_file_name(fname), werr)
                if not gen.options.keep_going then
                   exit = 1
                   break
                end
             else
-               log.normal("Wrote %s", util.get_output_file_name(fname))
+               log.normal("Wrote %s", fs.get_output_file_name(fname))
             end
          end
       end

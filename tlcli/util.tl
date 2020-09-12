@@ -73,20 +73,6 @@ function M.set<T>(arr: {T}): {T:boolean}
 end
 --]]
 
-local function get_extension(filename: string): string
-   local basename, extension = string.match(filename, "(.*)%.([a-z]+)$")
-   extension = extension and extension:lower()
-   return extension
-end
-
-function M.get_output_file_name(filename: string): string
-   local ext = get_extension(filename)
-   if ext == "lua" then
-      return filename:sub(1, -4) .. "out.lua"
-   elseif ext == "tl" then
-      return filename:sub(1, -3) .. "lua"
-   end
-end
 
 local record TealError
    x: number
@@ -111,35 +97,64 @@ local function concat_errors(errs: {TealError}): string
    return table.concat(msgs, "\n")
 end
 
-function M.protected_proxy<T>(t: {string:any}): {string:any}
+local fstr <const> = "Attempt to %s protected table <%s>\n   with key \"%s\" %s%s"
+function M.protected_proxy(t: {string:any}, err_handler: function(string)): {string:any}
+   err_handler = err_handler or log.warn as function(string)
+   local usage: {string} = {}
+   for k, v in pairs(t) do
+      table.insert(usage, k .. ": " .. type(v))
+   end
+   local usage_str = "\nValid entries for " .. tostring(t) .. " {\n   " .. table.concat(usage, "\n   ") .. "\n}"
    return setmetatable({}, {
       __index = function(_: table, key: any): any
-         if not t[key as string] then
-            error("Attempt to __index protected table " .. tostring(t), 2)
+         if t[key as string] == nil then
+	    err_handler(fstr:format("__index", tostring(t), tostring(key), "", usage_str))
+            return
          end
          return t[key as string]
       end,
-      __newindex = function()
-         error("Attempt to __newindex protected table " .. tostring(t), 2)
+      __newindex = function(_: table, key: any, val: any)
+         if t[key as string] == nil then
+	    err_handler(fstr:format("__index", tostring(t), tostring(key), "and " .. type(val) .. " value " .. tostring(val), usage_str))
+            return
+         end
+         rawset(t, key as string, val)
       end,
    })
 end
 
-function M.teal.type_check_file(filename: string): boolean, string
-   local lax = get_extension(filename) == "lua"
-   local result = assert(tl.process(filename))
+local tl_env: table
+local tl_modules: {string}
 
-   if #result.syntax_errors > 0 then
+local function teal_setup_env(lax: boolean, skip_compat53: boolean): table
+   if not tl_env then
+      tl_env = tl.init_env(lax, skip_compat53) as table
+   end
+end
+
+function M.teal.add_module(name: string)
+   table.insert(tl_modules, name)
+end
+
+function M.teal.type_check_file(filename: string): boolean, string
+   teal_setup_env(false, true)
+   local result = assert(
+      tl.process as function(string, table, any, table): table
+      (filename, tl_env, nil, tl_modules)
+   )
+   tl_env = result.env as table
+
+   if #result.syntax_errors as table > 0 then
       return nil, concat_errors(result.syntax_errors as {TealError})
    end
-   if #result.type_errors > 0 then
+   if #result.type_errors as table > 0 then
       return nil, concat_errors(result.type_errors as {TealError})
    end
    return true
 end
 
 function M.teal.compile(filename: string, type_check: boolean): string, string
-   local lax = get_extension(filename) == "lua"
+   local lax = filename:match("%.lua$")
    local result = assert(tl.process(filename))
    if #result.syntax_errors > 0 then
       return nil, concat_errors(result.syntax_errors as {TealError})
@@ -166,7 +181,7 @@ function M.teal.type_check_and_load(filename: string): function, string
 end
 
 function M.teal.compile_and_write(input_filename: string, type_check: boolean, output_filename: string): boolean, string
-   output_filename = output_filename or M.get_output_file_name(input_filename)
+   output_filename = output_filename or "teal.out.lua"
    local fh, ferr = io.open(output_filename, "w")
    if not fh then
       return nil, ferr

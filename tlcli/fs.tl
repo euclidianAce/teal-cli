@@ -1,4 +1,5 @@
 
+local log = require("tlcli.log")
 local util = require("tlcli.util")
 local lfs = require("lfs")
 
@@ -30,6 +31,17 @@ end
 local path_separator = package.config:sub(1, 1)
 function fs.get_path_separator(): string
    return path_separator
+end
+
+local function trim(str: string): string
+   return (str:gsub("^%s*(.-)%s*$", "%1"))
+end
+function fs.get_shared_library_ext(): string
+   if not package.cpath or trim(package.cpath) == "" then
+      return "so" -- FIXME
+   end
+
+   return package.cpath:match("%.(%w+)%s*$")
 end
 
 local function path_components_iter(pathname: string)
@@ -202,5 +214,39 @@ function fs.match(dirname: string, include: {string}, exclude: {string}): functi
       end
    end) as function(): string
 end
+
+function fs.add_to_teal_path(dirname: string)
+   local path_str = dirname
+
+   if string.sub(path_str, -1) == fs.get_path_separator() then
+      path_str = path_str:sub(1, -2)
+   end
+
+   path_str = path_str .. fs.get_path_separator()
+
+   local lib_path_str = path_str .. "?." .. fs.get_shared_library_ext() .. ";"
+   local lua_path_str = path_str .. "?.lua;"
+
+   package.path = lua_path_str .. package.path
+   package.cpath = lib_path_str .. package.cpath
+end
+
+local function get_extension(filename: string): string
+   local basename, extension = string.match(filename, "(.*)%.([a-z]+)$")
+   extension = extension and extension:lower()
+   return extension
+end
+
+function fs.get_output_file_name(filename: string): string
+   local comps = fs.get_path_components(filename)
+   local local_filename = comps[#comps]
+   local ext = get_extension(local_filename)
+   if ext == "lua" then
+      return local_filename:sub(1, -4) .. "out.lua"
+   elseif ext == "tl" then
+      return local_filename:sub(1, -3) .. "lua"
+   end
+end
+
 
 return fs

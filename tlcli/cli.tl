@@ -7,8 +7,11 @@ local config = require("tlcli.config")
 local fs = require("tlcli.fs")
 local log = require("tlcli.log")
 
-local Args = require("tlcli.types").Args
-local Command = require("tlcli.types").Command
+local types = require("tlcli.types")
+local Args = types.Args
+local Command = types.Command
+local Config = types.Config
+local GlobalConfig = types.GlobalConfig
 
 log.enable_level("debug")
 local M = {}
@@ -24,6 +27,12 @@ local function validate_command(parser: ArgparseParser, cmd: Command): boolean, 
    end
    if not cmd.description then
       return nil, "Command doesn't have a description"
+   end
+   if not cmd.command then
+      return nil, "Command doesn't have a 'command' entry"
+   end
+   if type(cmd.command) ~= "function" then
+      return nil, "Command's 'command' entry is not a function"
    end
    local parser_cmd = parser:command(cmd.name, cmd.description)
    if cmd.argparse then
@@ -61,12 +70,10 @@ local function load_user_command(parser: ArgparseParser, path: string): boolean,
    fh:close()
    local cmd, err = tl.load(code, path, "t", _G as {any:any}) as (function, string) --TODO: maybe put a metatable on _G or build a sandbox
    if err then
-      log.debug("loadfile errored with %s", err)
       return nil, err
    end
    local ok, cmd = pcall(cmd) as (boolean, Command)
    if not ok then
-      log.debug("pcall errored with %s", cmd as string)
       return nil, cmd as string
    end
    do
@@ -102,7 +109,6 @@ local function init_parser(): ArgparseParser
    load_commands(par)
 
    if lfs.attributes(cmd_path, "mode") == "directory" then
-      log.debug("found cmd_path at %s", cmd_path)
       for file in lfs.dir(cmd_path) do
          if lfs.attributes(file, "mode") ~= "directory"
             and file ~= "." and file ~= ".." then
@@ -114,7 +120,7 @@ local function init_parser(): ArgparseParser
       end
    else
       -- TODO: create commands directory or something
-      log.debug("commands dir not found or is not a directory")
+      log.error("Commands directory not found or is not a directory")
    end
 
    return par
@@ -122,18 +128,18 @@ end
 
 ---@return config.GlobalConfig
 ---@return string: the path to the root of the project (if there is one)
-local function load_config(): config.GlobalConfig, string
+local function load_config(): GlobalConfig, string
    local global_config, err = config.load_global_config()
    if not global_config and err then
       log.error("Unable to load global config:\n%s", err)
    end
-   local root_dir, orig_dir = config.find_project_root()
+   local dir = config.find_project_root()
+   return global_config, dir
 end
 
 local p = init_parser()
 
 function M.do_the_thing()
-   log.debug("Getting args from argparse")
    local ok, args = p:pparse() as (boolean, Args)
    if not ok then
       log.normal(p:get_usage())
@@ -144,13 +150,11 @@ function M.do_the_thing()
       os.exit(0)
    end
    local global_config = config.load_global_config()
-   local local_config = config.load_local_config()
-
-   log.debug(require"inspect"(arg))
-   log.debug(require"inspect"(args))
-   log.debug("Command: %s\nCommand entry: %s", args.command as string, require"inspect"(commands[args.command as string]))
-
-   os.exit(commands[args.command as string].command(args))
+   local local_config, err = config.load_local_config(commands)
+   if err then
+      log.error("Error loading local config:\n%s", err)
+   end
+   os.exit(commands[args.command as string].command(args, local_config))
 end
 
 return M
