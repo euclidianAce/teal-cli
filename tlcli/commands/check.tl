@@ -32,13 +32,15 @@ check = {
 
    command = function(args: Args, cfg: Config): number
       local exit = 0
+
+      -- TODO: this should probably be handled outside of the commands
       for i, mod_name in ipairs(cfg.preload_modules or {}) do
          util.teal.add_module(mod_name)
       end
-
       for i, path_name in ipairs(cfg.include_dir or {}) do
          fs.add_to_teal_path(path_name)
       end
+
       for i, fname in ipairs(args["script"] as {string}) do
          local ok, err = util.teal.type_check_file(fname)
          if not ok then

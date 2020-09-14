@@ -7,8 +7,8 @@ local Command = require("tlcli.types").Command
 local Config = require("tlcli.types").Config
 local GlobalConfig = require("tlcli.types").GlobalConfig
 
-local global_config_dir = os.getenv("XDG_CONFIG_HOME") or fs.path_concat(os.getenv("HOME"), ".config")
-local global_config_file = fs.path_concat(global_config_dir, "config.lua")
+local global_config_dir <const> = os.getenv("XDG_CONFIG_HOME") or fs.path_concat(os.getenv("HOME"), ".config")
+local global_config_file <const> = fs.path_concat(global_config_dir, "config.lua")
 
 
 local M = {}
@@ -29,15 +29,16 @@ end
 local function make_local_loaders(commands: {string:Command}): {string:function}, Config, string
    local new_config: Config = {}
    local config_loaders: {string:function} = {
-      build_dir = function(dirname: string) new_config.build_dir = dirname end,
-      exclude = function(patterns: {string}) new_config.exclude = patterns end,
-      files = function(filenames: {string}) new_config.files = filenames end,
-      include = function(patterns: {string}) new_config.include = patterns end,
+      --build command options
+      --source_dir = function(filename: string) new_config.source_dir = filename end,
+      --build_dir = function(dirname: string) new_config.build_dir = dirname end,
+      --exclude = function(patterns: {string}) new_config.exclude = patterns end,
+      --files = function(filenames: {string}) new_config.files = filenames end,
+      --include = function(patterns: {string}) new_config.include = patterns end,
       include_dir = function(filenames: {string}) new_config.include_dir = filenames end,
       preload_modules = function(modulenames: {string}) new_config.preload_modules = modulenames end,
       quiet = function(bool: boolean) new_config.quiet = bool end,
       skip_compat53 = function(bool: boolean) new_config.skip_compat53 = bool end,
-      source_dir = function(filename: string) new_config.source_dir = filename end,
    }
    local warnings = {}
    for name, cmd in pairs(commands) do
@@ -73,13 +74,14 @@ local function load_config_from_file(fname: string, commands: {string:Command}):
       end
    }) as table) as (function, string)
    if load_err then
+      setmetatable(_G, nil)
       return nil, load_err
    end
    local ok, call_err = pcall(chunk) as (boolean, string)
+   setmetatable(_G, nil)
    if not ok then
       return nil, call_err
    end
-   setmetatable(_G, nil)
    return config, #warnings > 0 and table.concat(warnings, "\n") or nil
 end
 

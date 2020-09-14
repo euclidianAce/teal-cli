@@ -7,12 +7,11 @@ include_dir {
 
 check {
 	keep_going = true,
-	not_an_option = "hi"
+	--not_an_option = "hi"
 }
 
---include { "**/*" }
-
---exclude { "testing/**/*" }
-
---build_dir "build/tlcli"
---source_dir "tlcli"
+--build {
+	--source_dir = "src",
+	--build_dir = "build",
+	--include = { "" }
+--}

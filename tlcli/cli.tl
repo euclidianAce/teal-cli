@@ -44,6 +44,11 @@ end
 
 local function load_commands(parser: ArgparseParser)
    -- defaults
+   -- TODO: tl complains about doing this dynamically
+   -- for now it's fine to do it manually, but if/when more and more commands
+   -- are included we should probably ignore that warning / attempt to fix it upstream
+
+   -- Ideally this would be lazily loaded
    local gen_cmd = require("tlcli.commands.gen")
    gen_cmd.argparse(parser:command(gen_cmd.name, gen_cmd.description))
    commands[gen_cmd.name] = gen_cmd
@@ -55,6 +60,10 @@ local function load_commands(parser: ArgparseParser)
    local run_cmd = require("tlcli.commands.run")
    run_cmd.argparse(parser:command(run_cmd.name, run_cmd.description))
    commands[run_cmd.name] = run_cmd
+
+   local build_cmd = require("tlcli.commands.build")
+   build_cmd.argparse(parser:command(build_cmd.name, build_cmd.description))
+   commands[build_cmd.name] = build_cmd
 end
 
 local cmd_path = os.getenv("XDG_CONFIG_HOME")
@@ -86,7 +95,7 @@ local function load_user_command(parser: ArgparseParser, path: string): boolean,
 end
 
 local function init_parser(): ArgparseParser
-   local par = argparse("tlc", "A cli to Teal, a minimalistic typed dialect of Lua.")
+   local par = argparse("tlc", "A command line interface to Teal, a minimalistic typed dialect of Lua.")
 
    par:option("-l --preload", "Execute the equivalent of require('modulename') before executing the Teal script(s).")
       :argname("<modulename>")
@@ -103,7 +112,7 @@ local function init_parser(): ArgparseParser
    -- This will probably be moved to the build command and maybe gen
    par:flag("-p --pretend", "Do not write to any files, print what files would be generated.")
 
-   par:require_command(false)
+   par:require_command(true)
    par:command_target("command")
 
    load_commands(par)
@@ -141,7 +150,9 @@ local p = init_parser()
 
 function M.do_the_thing()
    local ok, args = p:pparse() as (boolean, Args)
+   log.debug(require("inspect")(args))
    if not ok then
+      log.error(args as string)
       log.normal(p:get_usage())
       os.exit(1)
    end

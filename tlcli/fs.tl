@@ -82,16 +82,25 @@ local function fix_path(path: string): string, string
    return table.concat(fixed_path_components, path_separator)
 end
 
-function fs.path_concat(...: string): string
+function fs.path_concat(...: string|{string}): string
    local path = {}
    for i = 1, select("#", ...) do
-      local raw_fname = select(i, ...)
-      if i > 1 and string.sub(raw_fname, 1, 1) == "/" then --FIXME: windows
-         error("Attempt to concatenate non relative paths")
-      end
-      local fname = assert(fix_path(raw_fname))
-      if #fname > 0 then
-         table.insert(path, fname)
+      if type(select(i, ...)) == "table" then
+         for j, str in ipairs((select(i, ...)) as {string}) do
+            local fname = assert(fix_path(str))
+            if #fname > 0 then
+               table.insert(path, fname)
+            end
+         end
+      else
+         local raw_fname = select(i, ...) as string
+         if i > 1 and string.sub(raw_fname, 1, 1) == "/" then --FIXME: windows
+            error("Attempt to concatenate non relative paths")
+         end
+         local fname = assert(fix_path(raw_fname))
+         if #fname > 0 then
+            table.insert(path, fname)
+         end
       end
    end
    return table.concat(path, path_separator)
@@ -104,6 +113,7 @@ local function dir_iter(dirname: string)
       end
       -- ignore hidden files by default TODO: users should be allowed to opt out
       if file ~= ".." and file:sub(1,1) ~= "." then
+         log.debug("Iterating at file %s", fs.path_concat(dirname, file))
          if lfs.attributes(fs.path_concat(dirname, file), "mode") == "directory" then
             dir_iter(fs.path_concat(dirname, file))
          elseif file:sub(1,1) ~= "." then
@@ -118,7 +128,6 @@ function fs.dir(dirname: string): function(): string
 end
 
 local type Matcher = function(string): boolean
-
 
 local function esc_str(s: string): string
    return (string.gsub(s, "[%^%$%(%)%%%.%[%]%*%+%-%?]", function(match: string): string
@@ -184,7 +193,6 @@ function fs.get_file_paths(dirname: string): {string}
 end
 
 function fs.match(dirname: string, include: {string}, exclude: {string}): function(): string
-   local paths = fs.get_file_paths(dirname)
    local inc_matchers: {Matcher} = {}
    local exc_matchers: {Matcher} = {}
 
@@ -248,5 +256,15 @@ function fs.get_output_file_name(filename: string): string
    end
 end
 
+function fs.get_output_file_name_components(filename: string): {string}
+   local comps = fs.get_path_components(filename)
+   local ext = get_extension(comps[#comps])
+   if ext == "lua" then
+      comps[#comps] = comps[#comps]:sub(1, -4) .. "out.lua"
+   elseif ext == "tl" then
+      comps[#comps] = comps[#comps]:sub(1, -3) .. "lua"
+   end
+   return comps
+end
 
 return fs
