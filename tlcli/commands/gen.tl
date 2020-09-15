@@ -9,8 +9,13 @@ local Args = types.Args
 local Command = types.Command
 local Config = types.Config
 
-local gen: Command
-gen = {
+local options = util.protected_proxy{
+   keep_going = false,
+   use_same_dir = false,
+   check_first = false,
+}
+
+local gen: Command = {
    name = "gen",
    description = [[Generate a Lua file for one or more Teal scripts.]],
    argparse = function(cmd: ArgparseParser.Command)
@@ -26,14 +31,14 @@ gen = {
          local code, err = util.teal.compile(fname)
          if err then
             exit = 1
-            if not gen.options.keep_going then
+            if not options.keep_going then
                break
             end
          else
             local fh, oerr = io.open(fs.get_output_file_name(fname), "w")
             if not fh then
                log.error("Unable to open %s: %s", fs.get_output_file_name(fname), oerr)
-               if not gen.options.keep_going then
+               if not options.keep_going then
                   exit = 1
                   break
                end
@@ -42,7 +47,7 @@ gen = {
             fh:close()
             if not ok then
                log.error("Unable to write to %s: %s", fs.get_output_file_name(fname), werr)
-               if not gen.options.keep_going then
+               if not options.keep_going then
                   exit = 1
                   break
                end
@@ -56,15 +61,9 @@ gen = {
 
    config = function(opts: table)
       for k, v in pairs(opts) do
-         gen.options[k] = v
+         options[k as string] = v
       end
    end,
-
-   options = util.protected_proxy{
-      keep_going = false,
-      use_same_dir = false,
-      check_first = false,
-   },
 
 }
 return gen

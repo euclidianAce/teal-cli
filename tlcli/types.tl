@@ -29,23 +29,20 @@ local record M
       ---@param config : the local config
       ---@return       : the exit code
       type Callback = function(
-      args: Args,
-      config: Config
+         args: Args,
+         config: Config
       ): number
 
-         command: Callback
-         -- Interface to add argparse command
-         name: string
-         description: string
-         argparse: function(ArgparseParser.Command)
+      command: Callback
+      -- Interface to add argparse command
+      name: string
+      description: string
+      argparse: function(ArgparseParser.Command)
 
-            ---@param opts   : any additional options to be set from a tlconfig file
-            config: function(opts: table)
+      ---@param opts   : any additional options to be set from a tlconfig file
+      config: function(opts: table)
+   end
 
-            --- The default options for this command
-            options: table
-         end
+end
 
-      end
-
-      return M
+return M

@@ -14,6 +14,13 @@ local Args = types.Args
 local Command = types.Command
 local Config = types.Config
 
+local options: {string:string|{string}} = {
+   include: {string} = {},
+   exclude: {string} = {},
+   source_dir = ".",
+   build_dir = ".",
+}
+
 -- check if all the parents to dirname exist, and if they don't, create them
 local parents_that_exist: {string:boolean} = {}
 local function check_parents(dirname: string): boolean, string
@@ -87,9 +94,9 @@ build = {
       local current_dir = lfs.currentdir()
       local root = config.find_project_root()
       lfs.chdir(root)
-      if build.options.source_dir then
+      if options.source_dir then
       else
-         build.options.source_dir = "."
+         options.source_dir = "."
       end
 
       local record FileInfo
@@ -100,17 +107,17 @@ build = {
       end
 
       for file in fs.match(
-         build.options.source_dir as string,
-         build.options.include as {string},
-         build.options.exclude as {string}
+         options.source_dir as string,
+         options.include as {string},
+         options.exclude as {string}
       ) do
          local output_file = file
-         if build.options.source_dir then
-            output_file = output_file:sub(#build.options.source_dir as string + 2, -1)
+         if options.source_dir then
+            output_file = output_file:sub(#options.source_dir as string + 2, -1)
          end
-         if build.options.build_dir then
+         if options.build_dir then
             -- TODO: check that it and its parents exist, if they don't, create them
-            output_file = fs.path_concat(build.options.build_dir as string, output_file)
+            output_file = fs.path_concat(options.build_dir as string, output_file)
          end
          local ext = file:match(".*%.([a-z]+)$")
          if ext == "lua" then
@@ -174,9 +181,18 @@ build = {
    end,
 
    config = function(opts: table)
-      build.options = opts --FIXME
+      for k, v in pairs(opts) do
+         if options[k as string] then
+            if type(options[k as string]) ~= type(v) then
+               log.warn("build config: Key %s is of the wrong type\n   Expected %s, got %s", tostring(k), type(options[k as string]), type(v))
+            else
+               options[k as string] = v as string
+            end
+         else
+            log.warn("build config: Invalid key %s", tostring(k))
+         end
+      end
    end,
-
-   options = {},
 }
+
 return build

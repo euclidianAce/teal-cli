@@ -21,8 +21,10 @@ local long_log_str = "%sType checked%s: %s\n"
    .. "   Use %stlc gen%s %s\n"
    .. "      to generate %s"
 
-local check: Command
-check = {
+local options = util.protected_proxy{
+   keep_going = false,
+}
+local check: Command = {
    name = "check",
    description = [[Type check one or more Teal scripts.]],
    argparse = function(cmd: ArgparseParser.Command)
@@ -46,7 +48,7 @@ check = {
          if not ok then
             log.error(err)
             exit = 1
-            if not check.options.keep_going then
+            if not options.keep_going then
                break
             end
          else
@@ -68,13 +70,9 @@ check = {
 
    config = function(opts: table)
       for k, v in pairs(opts) do
-         check.options[k] = v
+         options[k as string] = v
       end
    end,
-
-   options = util.protected_proxy{
-      keep_going = false,
-   },
 }
 
 return check
