@@ -158,6 +158,7 @@ function M.do_the_thing()
       log.normal(p:get_usage())
       os.exit(0)
    end
+   log.debug("Args: %s", require'inspect'(args))
    local global_config = config.load_global_config()
    local local_config, err = config.load_local_config(commands)
    if err then

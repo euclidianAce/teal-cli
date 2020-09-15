@@ -104,7 +104,7 @@ function M.find_project_root(): string
    local has_local_config = M.is_in_dir(orig_dir, config_file_name)
    local found_home = false
    while not has_local_config do
-      if lfs.currentdir() == user_home then
+      if lfs.currentdir() == user_home or lfs.currentdir() == "/" then
          found_home = true
          break;
       end

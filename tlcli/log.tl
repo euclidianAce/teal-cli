@@ -47,6 +47,8 @@ function M.enable_level(level: string)  enabled[level] = true end
 function M.disable_level(level: string) enabled[level] = nil end
 function M.toggle_level(level: string)  enabled[level] = not enabled[level] end
 
+function M.is_enabled(level: string): boolean return enabled[level] end
+
 function M.set_stream(level: string, fh: FILE) streams[level] = fh end
 
 -- FIXME when teal knows about metatables

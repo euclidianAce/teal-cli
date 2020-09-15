@@ -13,4 +13,5 @@ check {
 build {
 	source_dir = "tlcli",
 	build_dir = "build/tlcli",
+	exclude = {"spec/**/*.lua"}
 }

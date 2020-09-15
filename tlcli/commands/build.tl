@@ -51,28 +51,31 @@ p:close()
 local progress = 0
 local total_steps = 0
 local function draw_progress_bar()
-   io.write(ansi.set_cursor_column(0))
-   io.write(ansi.clear_line(2))
-   local filled_space = math.floor((progress / total_steps) * columns)
-   io.write(("[%3d %%]"):format(math.floor(progress / total_steps * 100)))
-   io.write("  [")
-   io.write(("="):rep(filled_space))
-   io.write(">")
-   io.write((" "):rep(columns - filled_space > 0 and columns - filled_space or 0))
-   io.write("]")
-   io.flush()
+   if log.is_enabled("normal") then
+      io.write(ansi.set_cursor_column(0))
+      io.write(ansi.clear_line(2))
+      local filled_space = math.floor((progress / total_steps) * columns)
+      io.write(("[%3d %%]"):format(math.floor(progress / total_steps * 100)))
+      io.write("  [")
+      io.write(("="):rep(filled_space))
+      io.write(">")
+      io.write((" "):rep(columns - filled_space > 0 and columns - filled_space or 0))
+      io.write("]")
+      io.flush()
+   end
 end
 
 local function log_update_bar(level: string, fmt: string, ...: any)
-   io.write(ansi.clear_line(2))
-   io.write(ansi.set_cursor_column(0))
-   io.flush()
+   if log.is_enabled("normal") then
+      io.write(ansi.clear_line(2))
+      io.write(ansi.set_cursor_column(0))
+      io.flush()
+   end
    log.log(level, fmt, ...)
    draw_progress_bar()
 end
 
-local build: Command
-build = {
+local build: Command = {
    name = "build",
    description = "Build an entire Teal project based on the specifications in tlcconfig.lua.",
    argparse = function(cmd: ArgparseParser.Command)
@@ -80,30 +83,29 @@ build = {
    end,
 
    command = function(args: Args, cfg: Config): number
+      if not cfg then
+         return 1
+      end
       -- TODO: Keep some sort of database to not rebuild files that haven't been edited a la GNU Make or Tup
       local exit = 0
 
       -- TODO: this should probably be handled outside of the commands
-      for i, mod_name in ipairs(cfg.preload_modules or {}) do
+      for i, mod_name in ipairs(cfg and cfg.preload_modules or {}) do
          util.teal.add_module(mod_name)
       end
-      for i, path_name in ipairs(cfg.include_dir or {}) do
+      for i, path_name in ipairs(cfg and cfg.include_dir or {}) do
          fs.add_to_teal_path(path_name)
       end
 
       local current_dir = lfs.currentdir()
       local root = config.find_project_root()
+      if not root then
+         return 1
+      end
       lfs.chdir(root)
       if options.source_dir then
       else
          options.source_dir = "."
-      end
-
-      local record FileInfo
-         input_name: string
-         output_name: string
-         has_no_errors: boolean
-         err_str: string
       end
 
       for file in fs.match(
@@ -112,10 +114,10 @@ build = {
          options.exclude as {string}
       ) do
          local output_file = file
-         if options.source_dir then
+         if options.source_dir and options.source_dir ~= "." then
             output_file = output_file:sub(#options.source_dir as string + 2, -1)
          end
-         if options.build_dir then
+         if options.build_dir and options.build_dir ~= "." then
             -- TODO: check that it and its parents exist, if they don't, create them
             output_file = fs.path_concat(options.build_dir as string, output_file)
          end
@@ -126,20 +128,16 @@ build = {
             output_file = output_file:sub(1, -3) .. "lua"
          end
          assert(check_parents(output_file))
-         local info: FileInfo = {
-            input_name = file,
-            output_name = output_file,
-         }
          table.insert(threads, coroutine.create(function()
-            local res, perr = util.teal.process(info.input_name, true)
+            local res, perr = util.teal.process(file, true)
             if perr then
                progress = progress + 3
             else
                progress = progress + 1
             end
-            log_update_bar("normal", "Type checked %s%s%s", ansi.bright"yellow", info.input_name, ansi.reset())
+            log_update_bar("normal", "Type checked %s%s%s", ansi.bright"yellow", file, ansi.reset())
             coroutine.yield(perr)
-            local fh, err = io.open(info.output_name, "w") as (FILE, string)
+            local fh, err = io.open(output_file, "w") as (FILE, string)
             if err then
                progress = progress + 2
             else
@@ -150,10 +148,10 @@ build = {
             progress = progress + 1
             fh:close()
             if not ok then
-               log_update_bar("error", "Error writing %s%s%s, %s", ansi.bright"yellow", info.output_name, ansi.reset(), werr)
+               log_update_bar("error", "Error writing %s%s%s, %s", ansi.bright"yellow", output_file, ansi.reset(), werr)
                coroutine.yield(werr)
             end
-            log_update_bar("normal", "Wrote %s%s%s", ansi.bright"yellow", info.output_name, ansi.reset())
+            log_update_bar("normal", "Wrote %s%s%s", ansi.bright"yellow", output_file, ansi.reset())
          end))
          total_steps = total_steps + 3
       end

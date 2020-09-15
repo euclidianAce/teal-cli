@@ -216,19 +216,21 @@ function fs.match(dirname: string, include: {string}, exclude: {string}): functi
 
    return coroutine.wrap(function()
       for fname in fs.dir(dirname) do
-         local is_included = true
-         if #inc_matchers > 0 and not match_arr(inc_matchers, fname) then
-            is_included = false
-         end
-
-         if #exc_matchers > 0 then
-            if is_included and match_arr(exc_matchers, fname) then
+         if fname:match("%.tl$") and not fname:match("%.d%.tl$") then
+            local is_included = true
+            if #inc_matchers > 0 and not match_arr(inc_matchers, fname) then
                is_included = false
             end
-         end
 
-         if is_included then
-            coroutine.yield(fname)
+            if #exc_matchers > 0 then
+               if is_included and match_arr(exc_matchers, fname) then
+                  is_included = false
+               end
+            end
+
+            if is_included then
+               coroutine.yield(fname)
+            end
          end
       end
    end) as function(): string
