@@ -76,9 +76,9 @@ function fs.path_concat(...: string|{string}): string
    for i = 1, select("#", ...) do
       if type(select(i, ...)) == "table" then
          for j, str in ipairs((select(i, ...)) as {string}) do
-            local fname = assert(fix_path(str))
-            if #fname > 0 then
-               table.insert(path, fname)
+            --local fname = assert(fix_path(str))
+            if #str > 0 then
+               table.insert(path, str)
             end
          end
       else
@@ -86,9 +86,9 @@ function fs.path_concat(...: string|{string}): string
          if i > 1 and string.sub(raw_fname, 1, 1) == "/" then --FIXME: windows
             error("Attempt to concatenate non relative paths")
          end
-         local fname = assert(fix_path(raw_fname))
-         if #fname > 0 then
-            table.insert(path, fname)
+         --local fname = assert(fix_path(raw_fname))
+         if #raw_fname > 0 then
+            table.insert(path, raw_fname)
          end
       end
    end
@@ -125,7 +125,6 @@ local function dir_iter(dirname: string)
       end
       -- ignore hidden files by default TODO: users should be allowed to opt out
       if file ~= ".." and file:sub(1,1) ~= "." then
-         log.debug("Iterating at file %s", fs.path_concat(dirname, file))
          if lfs.attributes(fs.path_concat(dirname, file), "mode") == "directory" then
             dir_iter(fs.path_concat(dirname, file))
          elseif file:sub(1,1) ~= "." then
@@ -218,7 +217,7 @@ function fs.match(dirname: string, include: {string}, exclude: {string}): functi
    return coroutine.wrap(function()
       for fname in fs.dir(dirname) do
          local is_included = true
-         if not match_arr(inc_matchers, fname) then
+         if #inc_matchers > 0 and not match_arr(inc_matchers, fname) then
             is_included = false
          end
 

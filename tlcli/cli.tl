@@ -13,7 +13,7 @@ local Command = types.Command
 local Config = types.Config
 local GlobalConfig = types.GlobalConfig
 
---log.enable_level("debug")
+log.enable_level("debug")
 local M = {}
 
 local commands: {string:Command} = {}

@@ -10,8 +10,7 @@ check {
 	--not_an_option = "hi"
 }
 
---build {
-	--source_dir = "src",
-	--build_dir = "build",
-	--include = { "" }
---}
+build {
+	source_dir = "tlcli",
+	build_dir = "build/tlcli",
+}

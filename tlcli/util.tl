@@ -108,14 +108,14 @@ function M.protected_proxy(t: {string:any}, err_handler: function(string)): {str
    return setmetatable({}, {
       __index = function(_: table, key: any): any
          if t[key as string] == nil then
-	    err_handler(fstr:format("__index", tostring(t), tostring(key), "", usage_str))
+            err_handler(fstr:format("__index", tostring(t), tostring(key), "", usage_str))
             return
          end
          return t[key as string]
       end,
       __newindex = function(_: table, key: any, val: any)
          if t[key as string] == nil then
-	    err_handler(fstr:format("__index", tostring(t), tostring(key), "and " .. type(val) .. " value " .. tostring(val), usage_str))
+            err_handler(fstr:format("__index", tostring(t), tostring(key), "and " .. type(val) .. " value " .. tostring(val), usage_str))
             return
          end
          rawset(t, key as string, val)
@@ -136,6 +136,7 @@ function M.teal.add_module(name: string)
    table.insert(tl_modules, name)
 end
 
+-- TODO: use tl.Result once it's exposed
 function M.teal.type_check_file(filename: string): boolean, string
    teal_setup_env(false, true)
    local result = assert(
@@ -182,6 +183,7 @@ end
 
 function M.teal.compile_and_write(input_filename: string, type_check: boolean, output_filename: string): boolean, string
    output_filename = output_filename or "teal.out.lua"
+   log.debug("opening file handle: %s", output_filename)
    local fh, ferr = io.open(output_filename, "w")
    if not fh then
       return nil, ferr
@@ -196,6 +198,30 @@ function M.teal.compile_and_write(input_filename: string, type_check: boolean, o
       return nil, err
    end
    return true
+end
+
+function M.teal.process(input_filename: string, type_check: boolean): table, string
+   teal_setup_env(false, true)
+   local result = assert(
+      tl.process as function(string, table, any, table): table
+      (input_filename, tl_env, nil, tl_modules)
+   )
+   tl_env = result.env as table
+
+   if #result.syntax_errors as table > 0 then
+      return nil, concat_errors(result.syntax_errors as {TealError})
+   end
+   if type_check then
+      if #result.type_errors as table > 0 then
+         return nil, concat_errors(result.type_errors as {TealError})
+      end
+   end
+   return result as table
+end
+
+-- TODO: remove once teal exposes its types
+function M.teal.pretty_print_ast(result: table): string
+   return (tl.pretty_print_ast as function(table): string)(result)
 end
 
 return M
