@@ -37,6 +37,33 @@ end
 
 local threads: {number:thread} = {}
 
+local p = io.popen("stty size")
+local columns = math.floor(tonumber(p:read("*a"):match("%d+ (%d+)")) / 2) - 4
+p:close()
+
+local progress = 0
+local total_steps = 0
+local function draw_progress_bar()
+   io.write(ansi.set_cursor_column(0))
+   io.write(ansi.clear_line(2))
+   local filled_space = math.floor((progress / total_steps) * columns)
+   io.write(("[%3d %%]"):format(math.floor(progress / total_steps * 100)))
+   io.write("  [")
+   io.write(("="):rep(filled_space))
+   io.write(">")
+   io.write((" "):rep(columns - filled_space > 0 and columns - filled_space or 0))
+   io.write("]")
+   io.flush()
+end
+
+local function log_update_bar(level: string, fmt: string, ...: any)
+   io.write(ansi.clear_line(2))
+   io.write(ansi.set_cursor_column(0))
+   io.flush()
+   log.log(level, fmt, ...)
+   draw_progress_bar()
+end
+
 local build: Command
 build = {
    name = "build",
@@ -97,15 +124,31 @@ build = {
             output_name = output_file,
          }
          table.insert(threads, coroutine.create(function()
-            log.normal("Type checking %s%s%s", ansi.bright"yellow", info.input_name, ansi.reset())
-            local res = assert(util.teal.process(info.input_name))
-            coroutine.yield()
-            local fh, err = assert(io.open(info.output_name, "w")) as (FILE, string)
-            coroutine.yield()
-            assert(fh:write(util.teal.pretty_print_ast(res.ast as table)))
+            local res, perr = util.teal.process(info.input_name, true)
+            if perr then
+               progress = progress + 3
+            else
+               progress = progress + 1
+            end
+            log_update_bar("normal", "Type checked %s%s%s", ansi.bright"yellow", info.input_name, ansi.reset())
+            coroutine.yield(perr)
+            local fh, err = io.open(info.output_name, "w") as (FILE, string)
+            if err then
+               progress = progress + 2
+            else
+               progress = progress + 1
+            end
+            coroutine.yield(err)
+            local ok, werr = fh:write(util.teal.pretty_print_ast(res.ast as table))
+            progress = progress + 1
             fh:close()
-            log.normal("Wrote %s%s%s", ansi.bright"yellow", info.output_name, ansi.reset())
+            if not ok then
+               log_update_bar("error", "Error writing %s%s%s, %s", ansi.bright"yellow", info.output_name, ansi.reset(), werr)
+               coroutine.yield(werr)
+            end
+            log_update_bar("normal", "Wrote %s%s%s", ansi.bright"yellow", info.output_name, ansi.reset())
          end))
+         total_steps = total_steps + 3
       end
 
       while next(threads) do
@@ -114,14 +157,18 @@ build = {
                threads[i] = nil
             else
                local ok, err = coroutine.resume(t)
-               if not ok then
-                  log.error("%s", err)
+               if not ok or err as boolean then
+                  log_update_bar("error", "%s", err)
                   threads[i] = nil
                   exit = 1
                end
             end
+            draw_progress_bar()
          end
       end
+      io.write(ansi.clear_line(2))
+      io.write(ansi.set_cursor_column(0))
+      io.flush()
 
       return exit
    end,

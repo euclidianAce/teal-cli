@@ -146,11 +146,9 @@ local function load_config(): GlobalConfig, string
    return global_config, dir
 end
 
-local p = init_parser()
-
 function M.do_the_thing()
+   local p = init_parser()
    local ok, args = p:pparse() as (boolean, Args)
-   log.debug(require("inspect")(args))
    if not ok then
       log.error(args as string)
       log.normal(p:get_usage())
