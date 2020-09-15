@@ -13,6 +13,21 @@ local Args = types.Args
 local Command = types.Command
 local Config = types.Config
 
+-- check if all the parents to dirname exist, and if they don't, create them
+local function check_parents(dirname: string): boolean, string
+   for parent in fs.path_parents(dirname) do
+      local mode, err = lfs.attributes(parent, "mode") as (string, string)
+      if mode ~= "directory" then
+         if err and err:match("No such file or directory$") then
+            lfs.mkdir(parent)
+         else
+            return false, "Parent " .. dirname .. " exists, but is not a directory"
+         end
+      end
+   end
+   return true
+end
+
 local build: Command
 build = {
    name = "build",
@@ -40,8 +55,6 @@ build = {
       log.debug("Found project root %s", root)
       if build.options.source_dir then
          log.debug("Project has a source_dir: %s", build.options.source_dir)
-         -- TODO: check that it exists
-         --lfs.chdir(build.options.source_dir as string)
       else
          build.options.source_dir = "."
       end
@@ -50,7 +63,6 @@ build = {
       local record FileInfo
          input_name: string
          output_name: string
-         compiled_code: string
          has_no_errors: boolean
          err_str: string
       end
@@ -85,9 +97,10 @@ build = {
             input_name = file,
             output_name = output_file,
          }
-         log.normal("Type checking: %s", file)
+         log.normal("Type checking: %s%s%s", ansi.bright"yellow", file, ansi.reset())
          info.has_no_errors, info.err_str = util.teal.type_check_file(file)
          if not info.has_no_errors then
+            exit = 1
             log.error(info.err_str)
          end
          table.insert(files, info)
@@ -97,13 +110,21 @@ build = {
 
       for i, file in ipairs(files) do
          if file.has_no_errors then
+            log.debug("Checking parent directories of %s", file.output_name)
+            assert(check_parents(file.output_name))
             log.debug("Output file: %s", file.output_name)
+            local ok, err = util.teal.compile_and_write(file.input_name, false, file.output_name)
+            if not ok then
+               log.error("Error compiling %s%s%s:\n%s", ansi.bright"yellow", file.input_name, ansi.reset(), err)
+            else
+               log.normal("Wrote %s%s%s", ansi.bright"yellow", file.output_name, ansi.reset())
+            end
          else
-            log.debug("Wouldn't write %s as it has errors", file.output_name)
+            log.debug("Wouldn't write %s%s%s as it has errors", ansi.bright"yellow", file.output_name, ansi.reset())
          end
       end
 
-      return 0
+      return exit
    end,
 
    config = function(opts: table)

@@ -186,7 +186,7 @@ function M.teal.compile_and_write(input_filename: string, type_check: boolean, o
    if not fh then
       return nil, ferr
    end
-   local code, err = M.teal.compile(input_filename)
+   local code, err = M.teal.compile(input_filename, type_check)
    if not code then
       return nil, err
    end

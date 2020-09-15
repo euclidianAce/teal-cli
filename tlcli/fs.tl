@@ -33,17 +33,6 @@ function fs.get_path_separator(): string
    return path_separator
 end
 
-local function trim(str: string): string
-   return (str:gsub("^%s*(.-)%s*$", "%1"))
-end
-function fs.get_shared_library_ext(): string
-   if not package.cpath or trim(package.cpath) == "" then
-      return "so" -- FIXME
-   end
-
-   return package.cpath:match("%.(%w+)%s*$")
-end
-
 local function path_components_iter(pathname: string)
    for component in util.split(pathname, path_separator) do
       coroutine.yield(component)
@@ -104,6 +93,29 @@ function fs.path_concat(...: string|{string}): string
       end
    end
    return table.concat(path, path_separator)
+end
+
+local function trim(str: string): string
+   return (str:gsub("^%s*(.-)%s*$", "%1"))
+end
+function fs.get_shared_library_ext(): string
+   if not package.cpath or trim(package.cpath) == "" then
+      return "so" -- FIXME
+   end
+
+   return package.cpath:match("%.(%w+)%s*$")
+end
+
+function fs.path_parents(pathname: string): function(): string
+   local current_path: string = ""
+   local comps = fs.get_path_components(pathname)
+   comps[#comps] = nil
+   return coroutine.wrap(function()
+      for i, dir in ipairs(comps) do
+         current_path = fs.path_concat(current_path, dir)
+         coroutine.yield(current_path)
+      end
+   end) as function(): string
 end
 
 local function dir_iter(dirname: string)
