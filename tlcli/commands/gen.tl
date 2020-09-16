@@ -1,5 +1,7 @@
 
 local argparse = require("argparse")
+
+local config = require("tlcli.config")
 local fs = require("tlcli.fs")
 local log = require("tlcli.log")
 local util = require("tlcli.util")
@@ -59,11 +61,8 @@ local gen: Command = {
       return exit
    end,
 
-   config = function(opts: table)
-      for k, v in pairs(opts) do
-         options[k as string] = v
-      end
-   end,
-
+   config = config.create_setters({
+      keep_going = util.typechecker "boolean",
+   }, options)
 }
 return gen

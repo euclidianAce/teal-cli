@@ -39,8 +39,7 @@ local record M
       description: string
       argparse: function(ArgparseParser.Command)
 
-      ---@param opts   : any additional options to be set from a tlconfig file
-      config: function(opts: table)
+      config: function(string)
    end
 
 end

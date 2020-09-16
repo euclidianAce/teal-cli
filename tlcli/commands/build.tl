@@ -15,7 +15,7 @@ local Args = types.Args
 local Command = types.Command
 local Config = types.Config
 
-local options: {string:string|{string}} = {
+local options: {string:any} = {
    include: {string} = {},
    exclude: {string} = {},
    source_dir = ".",
@@ -91,13 +91,11 @@ local build: Command = {
          return 1
       end
       lfs.chdir(root)
-      -- TODO: check that source_dir exists
-      if options.source_dir then
-      else
+      if not options.source_dir then
          options.source_dir = "."
       end
 
-      local p = io.popen("stty size")
+      local p = io.popen("stty size") --TODO: this isn't super portable, and the progress bar should be toggleable
       local columns = math.floor(tonumber(p:read("*a"):match("%d+ (%d+)")) / 2.5)
       p:close()
 
@@ -197,19 +195,12 @@ local build: Command = {
       return exit
    end,
 
-   config = function(opts: table)
-      for k, v in pairs(opts) do
-         if options[k as string] then
-            if type(options[k as string]) ~= type(v) then
-               log.warn("build config: Key %s is of the wrong type\n   Expected %s, got %s", tostring(k), type(options[k as string]), type(v))
-            else
-               options[k as string] = v as string
-            end
-         else
-            log.warn("build config: Invalid key %s", tostring(k))
-         end
-      end
-   end,
+   config = config.create_setters({
+      build_dir = util.typechecker "string",
+      source_dir = util.typechecker "string",
+      include = util.array_typechecker "string",
+      exclude = util.array_typechecker "string",
+   }, options)
 }
 
 return build

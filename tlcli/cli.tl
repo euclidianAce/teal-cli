@@ -6,6 +6,7 @@ local tl = require("tl")
 local config = require("tlcli.config")
 local fs = require("tlcli.fs")
 local log = require("tlcli.log")
+local util = require("tlcli.util")
 
 local types = require("tlcli.types")
 local Args = types.Args
@@ -158,12 +159,10 @@ function M.do_the_thing()
       log.normal(p:get_usage())
       os.exit(0)
    end
-   log.debug("Args: %s", require'inspect'(args))
-   local global_config = config.load_global_config()
-   local local_config, err = config.load_local_config(commands)
-   if err then
-      log.error("Error loading local config:\n%s", err)
-   end
+   --log.debug("Args: %s", require'inspect'(args))
+   local global_config = util.error_if_not(config.load_global_config())
+   local local_config = util.error_if_not(config.load_local_config(commands))
+   config.check_hooks()
    os.exit(commands[args.command as string].command(args, local_config))
 end
 

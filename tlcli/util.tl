@@ -5,8 +5,28 @@ local ansi = require("tlcli.ansi")
 local log = require("tlcli.log")
 
 local M = {
-   teal = {}
+   teal = {},
 }
+
+-- Since we can't load custom typed stuff into a teal environment yet, use these for type checking
+function M.typechecker(typename: string): function(any): any
+   return function(x: any): any
+      if type(x) ~= typename then
+         return nil
+      end
+      return x
+   end
+end
+function M.array_typechecker(typename: string): function({any}): {any}
+   return function(x: {any}): {any}
+      for i, v in ipairs(x) do
+         if type(v) ~= typename then
+            return nil
+         end
+      end
+      return x
+   end
+end
 
 function M.split(str: string, delimiter: string, patt_disable: boolean): function(): string
    local i = 0
@@ -33,6 +53,20 @@ function M.generate<T>(generator: function(): T): {T}
       table.insert(results, value)
    end
    return results
+end
+
+function M.warn_if_not<T>(condition: T, message: string): T
+   if not condition then
+      log.warn(message)
+   end
+   return condition
+end
+
+function M.error_if_not<T>(condition: T, message: string): T
+   if not condition then
+      log.error(message)
+   end
+   return condition
 end
 
 local record TealError
@@ -85,7 +119,7 @@ function M.protected_proxy(t: {string:any}, err_handler: function(string)): {str
 end
 
 local tl_env: table
-local tl_modules: {string}
+local tl_modules: {string} = {}
 
 local function teal_setup_env(lax: boolean, skip_compat53: boolean): table
    if not tl_env then

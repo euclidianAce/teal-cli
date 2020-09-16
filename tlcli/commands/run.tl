@@ -1,6 +1,8 @@
 
 local argparse = require("argparse")
 local tl = require("tl")
+
+local config = require("tlcli.config")
 local log = require("tlcli.log")
 local util = require("tlcli.util")
 
@@ -8,7 +10,7 @@ local Args = require("tlcli.types").Args
 local Command = require("tlcli.types").Command
 local Config = require("tlcli.types").Config
 
-local options = util.protected_proxy{}
+local options = util.protected_proxy {}
 local run: Command = {
    name = "run",
    description = [[Run a Teal script.]],
@@ -63,11 +65,7 @@ local run: Command = {
       return ok and 0 or 1
    end,
 
-   config = function(opts: table)
-      for k, v in pairs(opts) do
-         options[k as string] = v
-      end
-   end,
+   config = config.create_setters({}, options) --?
 }
 
 return run

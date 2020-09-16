@@ -10,8 +10,45 @@ local GlobalConfig = require("tlcli.types").GlobalConfig
 local global_config_dir <const> = os.getenv("XDG_CONFIG_HOME") or fs.path_concat(os.getenv("HOME"), ".config")
 local global_config_file <const> = fs.path_concat(global_config_dir, "config.lua")
 
-
 local M = {}
+
+local record Hook
+   name: string
+   called: boolean
+end
+local hooked_funcs: {function:Hook} = {}
+local function call_hook(name: string, func: function): function
+   hooked_funcs[func] = {
+      name = name,
+      called = false,
+   }
+   return function(...: any): any...
+      hooked_funcs[func].called = true
+      return func(...)
+   end
+end
+
+function M.create_setters(callbacks: {string:function}, options: {string:any}): function(string): function
+   return function(opt_name: string): function
+      if not callbacks[opt_name] then
+         -- TODO: throw an error? emit a warning?
+         return function() end
+      end
+      return function(...: any)
+         options[opt_name] = callbacks[opt_name](...)
+      end
+   end
+end
+
+function M.check_hooks(): {string}
+   local errs = {}
+   for k, v in pairs(hooked_funcs) do
+      if not v.called then
+         table.insert(errs, "option " .. v.name .. " was referenced, but not set")
+      end
+   end
+   return errs
+end
 
 local function make_global_loaders(): {string:function}, GlobalConfig
    local new_global_config: GlobalConfig = {}
@@ -29,12 +66,6 @@ end
 local function make_local_loaders(commands: {string:Command}): {string:function}, Config, string
    local new_config: Config = {}
    local config_loaders: {string:function} = {
-      --build command options
-      --source_dir = function(filename: string) new_config.source_dir = filename end,
-      --build_dir = function(dirname: string) new_config.build_dir = dirname end,
-      --exclude = function(patterns: {string}) new_config.exclude = patterns end,
-      --files = function(filenames: {string}) new_config.files = filenames end,
-      --include = function(patterns: {string}) new_config.include = patterns end,
       include_dir = function(filenames: {string}) new_config.include_dir = filenames end,
       preload_modules = function(modulenames: {string}) new_config.preload_modules = modulenames end,
       quiet = function(bool: boolean) new_config.quiet = bool end,

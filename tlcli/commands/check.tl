@@ -21,9 +21,7 @@ local long_log_str = "%sType checked%s: %s\n"
    .. "   Use %stlc gen%s %s\n"
    .. "      to generate %s"
 
-local options = util.protected_proxy{
-   keep_going = false,
-}
+local options: {string:any} = {}
 local check: Command = {
    name = "check",
    description = [[Type check one or more Teal scripts.]],
@@ -68,11 +66,9 @@ local check: Command = {
       return exit
    end,
 
-   config = function(opts: table)
-      for k, v in pairs(opts) do
-         options[k as string] = v
-      end
-   end,
+   config = config.create_setters({
+      keep_going = util.typechecker "boolean",
+   }, options)
 }
 
 return check

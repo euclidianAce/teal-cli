@@ -5,13 +5,9 @@ include_dir {
    os.getenv"HOME" .. "/dev/teal-types/types/luafilesystem",
 }
 
-check {
-   keep_going = true,
-   --not_an_option = "hi"
-}
+check "keep_going"  ( true )
 
-build {
-   source_dir = "tlcli",
-   build_dir = "build/tlcli",
-   exclude = {"spec/**/*.lua"}
-}
+build "source_dir"    "tlcli"
+build "build_dir"     "build"
+build "exclude"     { "spec/**/*.lua" }
+
