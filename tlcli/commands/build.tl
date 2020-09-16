@@ -67,6 +67,7 @@ local build: Command = {
    description = "Build an entire Teal project based on the specifications in tlcconfig.lua.",
    argparse = function(cmd: ArgparseParser.Command)
       cmd:option("-p --pretend --dry-run", "Don't write to any files, type check and print what would be written to.")
+         :args(0)
    end,
 
    command = function(args: Args, cfg: Config): number
@@ -144,25 +145,29 @@ local build: Command = {
             lazy_log("normal", "Type checked %s%s%s", ansi.bright"yellow", file, ansi.reset())
             b:set_message("[1/3] " .. file)
             coroutine.yield(perr)
-            local fh, err = io.open(output_file, "w") as (FILE, string)
-            if err then
-               b:set_message("[1/3]x" .. file)
-               b:add_progress(step_size * 2)
-            else
-               b:set_message("[2/3] " .. file)
+            if not args["pretend"] then
+               local fh, err = io.open(output_file, "w") as (FILE, string)
+               if err then
+                  b:set_message("[1/3]x" .. file)
+                  b:add_progress(step_size * 2)
+               else
+                  b:set_message("[2/3] " .. file)
+                  b:add_progress(step_size)
+               end
+               coroutine.yield(err)
+               local ok, werr = fh:write(util.teal.pretty_print_ast(res.ast as table))
                b:add_progress(step_size)
+               fh:close()
+               if not ok then
+                  b:set_message("[2/3]x" .. file)
+                  lazy_log("error", "Error writing %s%s%s, %s", ansi.bright"yellow", output_file, ansi.reset(), werr)
+                  coroutine.yield(werr)
+               end
+               b:set_message("[3/3] " .. file)
+               lazy_log("normal", "Wrote %s%s%s", ansi.bright"yellow", output_file, ansi.reset())
+            else
+               lazy_log("normal", "Would write %s%s%s", ansi.bright"yellow", output_file, ansi.reset())
             end
-            coroutine.yield(err)
-            local ok, werr = fh:write(util.teal.pretty_print_ast(res.ast as table))
-            b:add_progress(step_size)
-            fh:close()
-            if not ok then
-               b:set_message("[2/3]x" .. file)
-               lazy_log("error", "Error writing %s%s%s, %s", ansi.bright"yellow", output_file, ansi.reset(), werr)
-               coroutine.yield(werr)
-            end
-            b:set_message("[3/3] " .. file)
-            lazy_log("normal", "Wrote %s%s%s", ansi.bright"yellow", output_file, ansi.reset())
          end))
          total_steps = total_steps + 3
       end

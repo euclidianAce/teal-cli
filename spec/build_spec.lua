@@ -84,4 +84,26 @@ describe("build command", function()
          }
       })
    end)
+   describe("-p --pretend --dry-run", function()
+      it("should not compile anything", function()
+         util.run_mock_project(finally, {
+            dir = {
+               "a.tl",
+               "b.tl",
+               "c.tl",
+               "d.tl",
+               "e.tl",
+               "f.tl",
+               "g.tl",
+               "tlcconfig.lua",
+            },
+            command = "build",
+            opts = {},
+            args = {pretend = true},
+            config = {},
+            result = 0,
+            generated = {},
+         })
+      end)
+   end)
 end)
