@@ -36,10 +36,10 @@ local check: Command = {
       local exit = 0
 
       -- TODO: this should probably be handled outside of the commands
-      for i, mod_name in ipairs(cfg.preload_modules or {}) do
+      for i, mod_name in ipairs(cfg and cfg.preload_modules or {}) do
          util.teal.add_module(mod_name)
       end
-      for i, path_name in ipairs(cfg.include_dir or {}) do
+      for i, path_name in ipairs(cfg and cfg.include_dir or {}) do
          fs.add_to_teal_path(path_name)
       end
 

@@ -7,6 +7,8 @@ log.disable_level("debug")
 log.disable_level("error")
 log.disable_level("warn")
 
+local current_dir = assert(lfs.currentdir())
+
 local M = {}
 
 local function typecheck(obj, typestr)
@@ -40,6 +42,9 @@ local function get_dir_structure(dirname)
 end
 
 local function insert_into(tab, files)
+   if not files then
+      return
+   end
    for k, v in pairs(files) do
       if type(k) == "number" then
          tab[v] = true
@@ -118,12 +123,21 @@ local function make_tmp_dir(finally)
    return name
 end
 
+local valid_commands = {
+   ["build"] = true,
+   ["run"] = true,
+   ["check"] = true,
+   ["gen"] = true,
+}
+
 function M.run_mock_project(finally, t)
    typecheck(finally, "function")
    typecheck(t, "table")
    typecheck(t.command, "string")
+   assert(valid_commands[t.command], "invalid command")
+
    typecheck(t.dir, "table")
-   typecheck(t.generated, "table")
+   nilable_typecheck(t.generated, "table")
    typecheck(t.opts, "table")
    t.args = t.args or {}
    typecheck(t.args, "table")
@@ -133,7 +147,6 @@ function M.run_mock_project(finally, t)
 
    local name = make_tmp_dir(finally)
    populate_dir(name, t.dir)
-   local current_dir = lfs.currentdir()
 
    local cmd = require("tlcli.commands." .. t.command)
 
@@ -143,6 +156,9 @@ function M.run_mock_project(finally, t)
       [t.command] = true,
       command = t.command,
    }, t.args)
+   if not args["script"] then
+      args["script"] = {}
+   end
    local result = cmd.command(args, t.config)
    local expected_dir_structure = {}
    insert_into(expected_dir_structure, t.dir)
