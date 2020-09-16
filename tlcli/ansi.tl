@@ -87,32 +87,39 @@ function M.reset(): string
    return reset
 end
 
-function M.cursor.up(n: number): string
-   return CSI:format(tostring(n) .. "A")
+function M.cursor.up(n: number)
+   io.write(CSI:format(tostring(n) .. "A"))
+   io.flush()
 end
 
-function M.cursor.down(n: number): string
-   return CSI:format(tostring(n) .. "B")
+function M.cursor.down(n: number)
+   io.write(CSI:format(tostring(n) .. "B"))
+   io.flush()
 end
 
-function M.cursor.right(n: number): string
-   return CSI:format(tostring(n) .. "C")
+function M.cursor.right(n: number)
+   io.write(CSI:format(tostring(n) .. "C"))
+   io.flush()
 end
 
-function M.cursor.left(n: number): string
-   return CSI:format(tostring(n) .. "D")
+function M.cursor.left(n: number)
+   io.write(CSI:format(tostring(n) .. "D"))
+   io.flush()
 end
 
-function M.set_cursor_pos(row: number, col: number): string
-   return CSI:format(tostring(row) .. ";" .. tostring(col) .. "H")
+function M.set_cursor_pos(row: number, col: number)
+   io.write(CSI:format(tostring(row) .. ";" .. tostring(col) .. "H"))
+   io.flush()
 end
 
-function M.set_cursor_column(col: number): string
-   return CSI:format(tostring(col or 0) .. "G")
+function M.set_cursor_column(col: number)
+   io.write(CSI:format(tostring(col or 0) .. "G"))
+   io.flush()
 end
 
-function M.clear_line(n: number): string
-   return CSI:format(tostring(n or 0) .. "K")
+function M.clear_line(n: number)
+   io.write(CSI:format(tostring(n or 0) .. "K"))
+   io.flush()
 end
 
 return M

@@ -50,6 +50,7 @@ function M.toggle_level(level: string)  enabled[level] = not enabled[level] end
 function M.is_enabled(level: string): boolean return enabled[level] end
 
 function M.set_stream(level: string, fh: FILE) streams[level] = fh end
+function M.get_stream(level: string): FILE return streams[level] end
 
 -- FIXME when teal knows about metatables
 function M.normal(fmt: string, ...: any) M.log("normal", fmt, ...) end

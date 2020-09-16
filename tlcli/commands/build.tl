@@ -8,6 +8,7 @@ local config = require("tlcli.config")
 local fs = require("tlcli.fs")
 local log = require("tlcli.log")
 local util = require("tlcli.util")
+local bar = require("tlcli.ui.bar")
 
 local types = require("tlcli.types")
 local Args = types.Args
@@ -42,38 +43,24 @@ local function check_parents(dirname: string): boolean, string
    return true
 end
 
+local record LogInfo
+   level: string
+   str: string
+end
+local log_queue: {LogInfo} = {}
+
+local function lazy_log(level: string, fmt: string, ...: any)
+   table.insert(log_queue, {level = level, str = string.format(fmt, ...)})
+end
+
+local function flush_log_queue()
+   for _, info in ipairs(log_queue) do
+      log.log(info.level, info.str)
+   end
+   log_queue = {}
+end
+
 local threads: {number:thread} = {}
-
-local p = io.popen("stty size")
-local columns = math.floor(tonumber(p:read("*a"):match("%d+ (%d+)")) / 2) - 4
-p:close()
-
-local progress = 0
-local total_steps = 0
-local function draw_progress_bar()
-   if log.is_enabled("normal") then
-      io.write(ansi.set_cursor_column(0))
-      io.write(ansi.clear_line(2))
-      local filled_space = math.floor((progress / total_steps) * columns)
-      io.write(("[%3d %%]"):format(math.floor(progress / total_steps * 100)))
-      io.write("  [")
-      io.write(("="):rep(filled_space))
-      io.write(">")
-      io.write((" "):rep(columns - filled_space > 0 and columns - filled_space or 0))
-      io.write("]")
-      io.flush()
-   end
-end
-
-local function log_update_bar(level: string, fmt: string, ...: any)
-   if log.is_enabled("normal") then
-      io.write(ansi.clear_line(2))
-      io.write(ansi.set_cursor_column(0))
-      io.flush()
-   end
-   log.log(level, fmt, ...)
-   draw_progress_bar()
-end
 
 local build: Command = {
    name = "build",
@@ -103,11 +90,31 @@ local build: Command = {
          return 1
       end
       lfs.chdir(root)
+      -- TODO: check that source_dir exists
       if options.source_dir then
       else
          options.source_dir = "."
       end
 
+      local p = io.popen("stty size")
+      local columns = math.floor(tonumber(p:read("*a"):match("%d+ (%d+)")) / 2.5)
+      p:close()
+
+      local b = bar.new{
+         length = columns,
+         show_progress = true,
+         message = "",
+         message_length = math.floor(columns / 2),
+      }
+      local function update_bar()
+         ansi.set_cursor_column(0)
+         ansi.clear_line(2)
+         b:draw(io.stdout)
+         io.stdout:flush()
+      end
+
+      local step_size: number
+      local total_steps = 0
       for file in fs.match(
          options.source_dir as string,
          options.include as {string},
@@ -118,7 +125,6 @@ local build: Command = {
             output_file = output_file:sub(#options.source_dir as string + 2, -1)
          end
          if options.build_dir and options.build_dir ~= "." then
-            -- TODO: check that it and its parents exist, if they don't, create them
             output_file = fs.path_concat(options.build_dir as string, output_file)
          end
          local ext = file:match(".*%.([a-z]+)$")
@@ -131,49 +137,57 @@ local build: Command = {
          table.insert(threads, coroutine.create(function()
             local res, perr = util.teal.process(file, true)
             if perr then
-               progress = progress + 3
+               b:add_progress(step_size * 3)
             else
-               progress = progress + 1
+               b:add_progress(step_size * 1)
             end
-            log_update_bar("normal", "Type checked %s%s%s", ansi.bright"yellow", file, ansi.reset())
+            lazy_log("normal", "Type checked %s%s%s", ansi.bright"yellow", file, ansi.reset())
+            b:set_message("[1/3] " .. file)
             coroutine.yield(perr)
             local fh, err = io.open(output_file, "w") as (FILE, string)
             if err then
-               progress = progress + 2
+               b:set_message("[1/3]x" .. file)
+               b:add_progress(step_size * 2)
             else
-               progress = progress + 1
+               b:set_message("[2/3] " .. file)
+               b:add_progress(step_size)
             end
             coroutine.yield(err)
             local ok, werr = fh:write(util.teal.pretty_print_ast(res.ast as table))
-            progress = progress + 1
+            b:add_progress(step_size)
             fh:close()
             if not ok then
-               log_update_bar("error", "Error writing %s%s%s, %s", ansi.bright"yellow", output_file, ansi.reset(), werr)
+               b:set_message("[2/3]x" .. file)
+               lazy_log("error", "Error writing %s%s%s, %s", ansi.bright"yellow", output_file, ansi.reset(), werr)
                coroutine.yield(werr)
             end
-            log_update_bar("normal", "Wrote %s%s%s", ansi.bright"yellow", output_file, ansi.reset())
+            b:set_message("[3/3] " .. file)
+            lazy_log("normal", "Wrote %s%s%s", ansi.bright"yellow", output_file, ansi.reset())
          end))
          total_steps = total_steps + 3
       end
+      step_size = 1 / total_steps
 
       while next(threads) do
          for i, t in pairs(threads) do
+            update_bar()
             if coroutine.status(t) == "dead" then
                threads[i] = nil
             else
                local ok, err = coroutine.resume(t)
                if not ok or err as boolean then
-                  log_update_bar("error", "%s", err)
+                  lazy_log("error", "%s", err)
                   threads[i] = nil
                   exit = 1
                end
             end
-            draw_progress_bar()
          end
       end
-      io.write(ansi.clear_line(2))
-      io.write(ansi.set_cursor_column(0))
-      io.flush()
+
+      ansi.set_cursor_column(0)
+      ansi.clear_line(2)
+
+      flush_log_queue()
 
       return exit
    end,
