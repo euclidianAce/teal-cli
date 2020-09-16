@@ -35,45 +35,6 @@ function M.generate<T>(generator: function(): T): {T}
    return results
 end
 
---[[
-function M.die(str: string, ...: string)
-   log.log("error", str, ...)
-   os.exit(1)
-end
-
-function M.script_path(): string
-   local str = debug.getinfo(2, "S").source:sub(2)
-   return str:match("(.*[/\\])") or "."
-end
-
-function M.trim(str: string): string
-   return (str:gsub("^%s*(.-)%s*$", "%1"))
-end
-
-function M.is_nil_or_whitespace(str: string): boolean
-   return str == nil or M.trim(str) == ""
-end
-
-function M.find_in_sequence(seq: {string}, value: string): boolean
-   for _, v in ipairs(seq) do
-      if M.trim(v) == M.trim(value) then
-         return true
-      end
-   end
-   return false
-end
-
-
-function M.set<T>(arr: {T}): {T:boolean}
-   local s: {T:boolean} = {}
-   for i, v in ipairs(arr) do
-      s[v] = true
-   end
-   return s
-end
---]]
-
-
 local record TealError
    x: number
    y: number
