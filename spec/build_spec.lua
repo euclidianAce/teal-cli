@@ -68,4 +68,20 @@ describe("build command", function()
          generated = {},
       })
    end)
+   it("should not compile things with type errors", function()
+      util.run_mock_project(finally, {
+         dir = {
+            "a.tl",
+            ["b.tl"] = "local x: string = 5",
+            "tlcconfig.lua",
+         },
+         command = "build",
+         opts = {},
+         config = {},
+         result = 1,
+         generated = {
+            "a.lua",
+         }
+      })
+   end)
 end)
