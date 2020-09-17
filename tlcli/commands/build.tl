@@ -30,6 +30,7 @@ local function check_parents(dirname: string): boolean, string
          local mode, err = lfs.attributes(parent, "mode") as (string, string)
          if mode ~= "directory" then
             if err and err:match("No such file or directory$") then
+               log.queue("normal", "Created directory %s", ansi.bright.green(parent))
                lfs.mkdir(parent)
                parents_that_exist[parent] = true
             else
@@ -122,7 +123,7 @@ local build: Command = {
 
          output_file = output_file:sub(1, -3) .. "lua"
 
-         draw_progress("Preparing: ", "Parent directories")
+         draw_progress("Preparing", "Parent directories")
          assert(check_parents(output_file))
 
          local disp_file = ansi.bright.yellow(file)
@@ -136,7 +137,6 @@ local build: Command = {
             local res = assert(util.teal.process(file, true))
 
             coroutine.yield()
-
             if not args["pretend"] then
                create_writer(function()
                   local fh = assert(io.open(output_file, "w"))
@@ -160,29 +160,39 @@ local build: Command = {
 
       step_size = 1 / total_steps
 
-      local function step(ts: {number:thread})
-         for i, t in pairs(ts) do
-            if coroutine.status(t) == "dead" then
-               ts[i] = nil
-            else
-               local ok, err = coroutine.resume(t)
-               if not ok or err as boolean then
-                  log.queue("error", "%s", err)
+      local step = function(ts: {number:thread}): any
+         while true do
+            for i, t in pairs(ts) do
+               if coroutine.status(t) == "dead" then
                   ts[i] = nil
-                  exit = 1
+               else
+                  local ok, err = coroutine.resume(t)
+                  if not ok or err as boolean then
+                     log.queue("error", "%s", err)
+                     ts[i] = nil
+                     exit = 1
+                  end
+               end
+               if i % 20 == 0 then
+                  coroutine.yield()
+                  break
                end
             end
+            coroutine.yield()
          end
       end
 
+      local check_step = util.wrap_with(step, threads.checkers)
+      local write_step = util.wrap_with(step, threads.writers)
+
       while next(threads.checkers) or next(threads.writers) do
-         step(threads.checkers)
+         check_step()
          if options.keep_going as boolean
             or not next(threads.checkers)
             -- only write after checking everything in case of errors
             -- or if we don't care about errors
          then
-            step(threads.writers)
+            write_step()
          end
       end
 
