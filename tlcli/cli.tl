@@ -159,6 +159,10 @@ function M.do_the_thing()
       log.normal(p:get_usage())
       os.exit(0)
    end
+   if args.quiet then
+      log.disable_level("normal")
+      log.disable_level("verbose")
+   end
    --log.debug("Args: %s", require'inspect'(args))
    local global_config = util.error_if_not(config.load_global_config())
    local local_config = util.error_if_not(config.load_local_config(commands))

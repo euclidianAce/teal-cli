@@ -82,8 +82,8 @@ local function concat_errors(errs: {TealError}): string
        table.insert(
           msgs,
           string.format(
-             ansi.bright"yellow" .. "%s " .. ansi.reset()
-                .. ansi.bright"magenta" .. "%d:%d" .. ansi.reset()
+             ansi.bright.yellow"%s "
+                .. ansi.bright.magenta"%d:%d"
                 .. " %s",
              err.filename, err.y, err.x, err.msg or ""
           )

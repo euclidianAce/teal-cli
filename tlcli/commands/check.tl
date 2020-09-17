@@ -14,12 +14,13 @@ local Config = types.Config
 local b = ansi.bright
 local r = ansi.reset()
 
-local log_str = "%sType checked%s: %s"
-local long_log_str = "%sType checked%s: %s\n"
-   .. "   Use %stlc run%s %s\n"
-   .. "      to run %s as a script\n"
-   .. "   Use %stlc gen%s %s\n"
-   .. "      to generate %s"
+-- TODO: define a colorscheme for this type of stuff
+local log_str = b.green"Type checked: " .. b.yellow"%s"
+local long_log_str = log_str .. "\n"
+   .. "   Use " .. b.magenta"tlc run " .. b.yellow" %s\n"
+   .. "      to run " .. b.yellow"%s" .. " as a script\n"
+   .. "   Use " .. b.magenta"tlc gen" .. b.yellow" %s\n"
+   .. "      to generate " .. b.yellow"%s"
 
 local options: {string:any} = {}
 local check: Command = {
@@ -51,13 +52,11 @@ local check: Command = {
             end
          else
             if #args["script"] as {string} > 1 then
-               log.normal(log_str, b"green", r, fname)
+               log.normal(log_str, fname)
             else
                log.normal(
                   long_log_str,
-                  b"green", r, fname,
-                  b"magenta", r, fname, fname,
-                  b"magenta", r, fname,
+                  fname, fname, fname, fname,
                   fs.get_output_file_name(fname)
                )
             end

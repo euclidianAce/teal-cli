@@ -19,15 +19,20 @@ local streams: {string:FILE} = setmetatable({
 })
 
 local b = ansi.bright
-local r = ansi.reset()
 
 local prefixes: {string:{string}} = setmetatable({
-   ["normal"]   = {b"cyan"    .. "  Teal" .. r .. ": ", b"cyan"    .. "   ...  " .. r},
-   ["verbose"]  = {b"cyan"    .. " *Teal" .. r .. ": ", b"cyan"    .. "   ...  " .. r},
-   ["warn"]     = {b"yellow"  .. "  Warn" .. r .. ": ", b"yellow"  .. "   ...  " .. r},
-   ["error"]    = {b"red"     .. " Error" .. r .. ": ", b"red"     .. "   ...  " .. r},
-   ["debug"]    = {b"green"   .. " DEBUG" .. r .. ": ", b"green"   .. "   ...  " .. r},
+   ["normal"]   = {b.cyan   "  Teal" .. ": ", b.cyan    "   ...  " },
+   ["verbose"]  = {b.cyan   " *Teal" .. ": ", b.cyan    "   ...  " },
+   ["warn"]     = {b.yellow "  Warn" .. ": ", b.yellow  "   ...  " },
+   ["error"]    = {b.red    " Error" .. ": ", b.red     "   ...  " },
+   ["debug"]    = {b.green  " DEBUG" .. ": ", b.green   "   ...  " },
 }, { __index = function(): {string} return {"        ", "        "} end })
+
+local record QueuedMessage
+   level: string
+   message: string
+end
+local queue: {QueuedMessage} = {}
 
 function M.log(level: string, fmt: string, ...: any)
    if enabled[level] then
@@ -39,6 +44,23 @@ function M.log(level: string, fmt: string, ...: any)
          streams[level]:write(prefixes[level][2], line)
       end
    end
+end
+
+function M.queue(level: string, fmt: string, ...: any)
+   table.insert(
+      queue,
+      {
+         level = level,
+         message = string.format(fmt, ...),
+      }
+   )
+end
+
+function M.flush()
+   for _, m in ipairs(queue) do
+      M.log(m.level, m.message)
+   end
+   queue = {}
 end
 
 function M.set_prefix(level: string, new_prefix: {string}) prefixes[level] = new_prefix end

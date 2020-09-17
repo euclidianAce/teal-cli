@@ -51,6 +51,10 @@ function Bar:set_progress(p: number)
    self.progress = clamp(p)
 end
 
+function Bar:get_progress(): number
+   return self.progress
+end
+
 function Bar:add_progress(p: number)
    self.progress = clamp(self.progress + p)
 end

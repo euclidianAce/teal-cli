@@ -1,5 +1,7 @@
 
 local M = {
+   bright: {string:(function(string):string)} = {},
+   dark: {string:(function(string):string)} = {},
    fg = {
       rgb: function(number,number,number):string = nil,
       hex: function(string|number):string = nil,
@@ -11,7 +13,11 @@ local M = {
    cursor = {},
 }
 
-local CSI = string.char(27) .. "[%s"
+local CSI <const> = string.char(27) .. "[%s"
+local reset <const> = CSI:format("0m")
+function M.reset(): string
+   return reset
+end
 
 local dark = {
    black = "30m",
@@ -35,12 +41,15 @@ local bright = {
    white = "97m",
 }
 
-function M.dark(cname: string): string
-   return CSI:format(dark[cname])
+for color, esc_seq in pairs(bright) do
+   M.bright[color] = function(s: string): string
+      return CSI:format(bright[color]) .. s .. reset
+   end
 end
-
-function M.bright(cname: string): string
-   return CSI:format(bright[cname])
+for color, esc_seq in pairs(dark) do
+   M.dark[color] = function(s: string): string
+      return CSI:format(dark[color]) .. s .. reset
+   end
 end
 
 local CSIfg = string.char(27) .. "[38;2;%d;%d;%dm"
@@ -82,44 +91,32 @@ M.bg = {
    end
 }
 
-local reset = CSI:format("0m")
-function M.reset(): string
-   return reset
-end
-
 function M.cursor.up(n: number)
    io.write(CSI:format(tostring(n) .. "A"))
-   io.flush()
 end
 
 function M.cursor.down(n: number)
    io.write(CSI:format(tostring(n) .. "B"))
-   io.flush()
 end
 
 function M.cursor.right(n: number)
    io.write(CSI:format(tostring(n) .. "C"))
-   io.flush()
 end
 
 function M.cursor.left(n: number)
    io.write(CSI:format(tostring(n) .. "D"))
-   io.flush()
 end
 
-function M.set_cursor_pos(row: number, col: number)
+function M.cursor.set_pos(row: number, col: number)
    io.write(CSI:format(tostring(row) .. ";" .. tostring(col) .. "H"))
-   io.flush()
 end
 
-function M.set_cursor_column(col: number)
+function M.cursor.set_column(col: number)
    io.write(CSI:format(tostring(col or 0) .. "G"))
-   io.flush()
 end
 
 function M.clear_line(n: number)
    io.write(CSI:format(tostring(n or 0) .. "K"))
-   io.flush()
 end
 
 return M
