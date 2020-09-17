@@ -31,7 +31,8 @@ local check: Command = {
          :args("+")
    end,
 
-   command = function(args: Args, cfg: Config): number
+   command = function(args: Args): number
+      local cfg = config.load_local_config()
       local exit = 0
 
       -- TODO: this should probably be handled outside of the commands

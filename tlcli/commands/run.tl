@@ -19,7 +19,7 @@ local run: Command = {
          :args("+")
    end,
 
-   command = function(args: Args, cfg: Config): number
+   command = function(args: Args): number
       local script_args: {string} = args["script"] as {string}
       local fname = script_args[1]
       local chunk, err = util.teal.type_check_and_load(fname)

@@ -27,7 +27,7 @@ local gen: Command = {
          :argname("<filename>")
    end,
 
-   command = function(args: Args, cfg: Config): number
+   command = function(args: Args): number
       local exit = 0
       for i, fname in ipairs(args["script"] as {string}) do
          local code, err = util.teal.compile(fname)

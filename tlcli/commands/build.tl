@@ -59,7 +59,8 @@ local build: Command = {
          :args(0)
    end,
 
-   command = function(args: Args, cfg: Config): number
+   command = function(args: Args): number
+      local cfg = config.load_local_config()
       if not cfg then
          log.error("No config provided")
          return 1

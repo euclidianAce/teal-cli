@@ -167,7 +167,7 @@ function M.do_the_thing()
    local global_config = util.error_if_not(config.load_global_config())
    local local_config = util.error_if_not(config.load_local_config(commands))
    config.check_hooks()
-   os.exit(commands[args.command as string].command(args, local_config))
+   os.exit(commands[args.command as string].command(args))
 end
 
 return M

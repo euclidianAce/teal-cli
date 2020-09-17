@@ -150,9 +150,16 @@ function M.find_project_root(): string
    return root_dir or orig_dir
 end
 
+local local_config: Config
 function M.load_local_config(commands: {string:Command}): Config, string
-   local dir = M.find_project_root()
-   return load_config_from_file(fs.path_concat(dir, config_file_name), commands)
+   if not local_config then
+      if not commands then
+         return nil, "Commands not yet loaded"
+      end
+      local dir = M.find_project_root()
+      local_config = load_config_from_file(fs.path_concat(dir, config_file_name), commands)
+   end
+   return local_config
 end
 
 function M.load_global_config(): GlobalConfig, string

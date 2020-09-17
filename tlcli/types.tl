@@ -26,12 +26,8 @@ local record M
    type Args = {string:{string}|string|boolean}
    type Command = record
       ---@param args   : the result from the argparser
-      ---@param config : the local config
       ---@return       : the exit code
-      type Callback = function(
-         args: Args,
-         config: Config
-      ): number
+      type Callback = function(args: Args): number
 
       command: Callback
       -- Interface to add argparse command
