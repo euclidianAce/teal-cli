@@ -2,13 +2,11 @@
 local argparse = require("argparse")
 local tl = require("tl")
 
-local config = require("tlcli.config")
 local log = require("tlcli.log")
 local util = require("tlcli.util")
 
 local Args = require("tlcli.types").Args
 local Command = require("tlcli.types").Command
-local Config = require("tlcli.types").Config
 
 local options = util.protected_proxy {}
 local run: Command = {
@@ -64,8 +62,6 @@ local run: Command = {
       local ok = pcall(chunk, table.unpack(script_args))
       return ok and 0 or 1
    end,
-
-   config = config.create_setters({}, options) --?
 }
 
 return run

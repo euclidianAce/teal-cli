@@ -3,7 +3,6 @@ local log = require("tlcli.log")
 local util = require("tlcli.util")
 local lfs = require("lfs")
 
-
 local record fs
    type File = {string:File}
    type FilePath = {string}
@@ -94,6 +93,19 @@ function fs.path_concat(...: string|{string}): string
    end
    return table.concat(path, path_separator)
 end
+
+local HOME <const> = os.getenv("HOME")
+local XDG_CONFIG_HOME <const> = os.getenv("XDG_CONFIG_HOME")
+   or fs.path_concat(HOME, ".config")
+local CMD_PATH <const> = fs.path_concat(XDG_CONFIG_HOME, "teal", "commands")
+local GLOBAL_CONFIG_PATH <const> = fs.path_concat(XDG_CONFIG_HOME, "config.lua")
+local TYPES_PATH <const> = fs.path_concat(XDG_CONFIG_HOME, "teal", "teal-types", "types")
+
+function fs.HOME(): string return HOME end
+function fs.XDG_CONFIG_HOME(): string return XDG_CONFIG_HOME end
+function fs.CMD_PATH(): string return CMD_PATH end
+function fs.GLOBAL_CONFIG_PATH(): string return GLOBAL_CONFIG_PATH end
+function fs.TYPES_PATH(): string return TYPES_PATH end
 
 local function trim(str: string): string
    return (str:gsub("^%s*(.-)%s*$", "%1"))
@@ -236,17 +248,18 @@ function fs.match(dirname: string, include: {string}, exclude: {string}): functi
    end) as function(): string
 end
 
-function fs.add_to_teal_path(dirname: string)
+function fs.add_to_path(dirname: string)
    local path_str = dirname
 
-   if string.sub(path_str, -1) == fs.get_path_separator() then
+   if string.sub(path_str, -1) == path_separator then
       path_str = path_str:sub(1, -2)
    end
 
-   path_str = path_str .. fs.get_path_separator()
+   path_str = path_str .. path_separator
 
    local lib_path_str = path_str .. "?." .. fs.get_shared_library_ext() .. ";"
-   local lua_path_str = path_str .. "?.lua;"
+   local lua_path_str = path_str .. "?.lua" .. ";"
+      .. path_str ..  "?" .. path_separator .. "init.lua;"
 
    package.path = lua_path_str .. package.path
    package.cpath = lib_path_str .. package.cpath
@@ -278,6 +291,46 @@ function fs.get_output_file_name_components(filename: string): {string}
       comps[#comps] = comps[#comps]:sub(1, -3) .. "lua"
    end
    return comps
+end
+
+local USER_HOME <const> = os.getenv("HOME")
+function fs.is_in_dir(dirname: string, filename: string): boolean
+   for file in lfs.dir(dirname) do
+      if file == filename then
+         return true
+      end
+   end
+end
+
+function fs.get_tail(path: string): string
+   return string.match(path, "[^" .. path_separator .. "]*$")
+end
+
+-- basically the Tupfile/Makefile that indicates the root of the project
+local root_file <const> = "tlcconfig.lua"
+function fs.ROOT_FILE(): string return root_file end
+function fs.find_project_root(): string
+   local orig_dir = lfs.currentdir()
+
+   -- TODO: we dont need to chdir here
+   -- so... dont
+
+   local has_local_config = fs.is_in_dir(orig_dir, root_file)
+   local found_home = false
+   while not has_local_config do
+      if lfs.currentdir() == USER_HOME or lfs.currentdir() == "/" then -- TODO: windows root "[A-Z]:\" ?
+         found_home = true
+         break
+      end
+      lfs.chdir("..")
+      has_local_config = fs.is_in_dir(lfs.currentdir(), root_file)
+   end
+   local root_dir: string
+   if not found_home then
+      root_dir = lfs.currentdir()
+   end
+   lfs.chdir(orig_dir)
+   return root_dir or orig_dir
 end
 
 return fs

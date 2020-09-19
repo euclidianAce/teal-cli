@@ -4,7 +4,6 @@ local lfs = require("lfs")
 local tl = require("tl")
 
 local ansi = require("tlcli.ansi")
-local config = require("tlcli.config")
 local fs = require("tlcli.fs")
 local log = require("tlcli.log")
 local util = require("tlcli.util")
@@ -13,7 +12,6 @@ local bar = require("tlcli.ui.bar")
 local types = require("tlcli.types")
 local Args = types.Args
 local Command = types.Command
-local Config = types.Config
 
 local options: {string:any} = {
    include: {string} = {},
@@ -61,27 +59,14 @@ local build: Command = {
    end,
 
    command = function(args: Args): number
-      local cfg = config.load_local_config()
-      if not cfg then
-         log.error("No config provided")
+      local loaded_config, config_err = require("tlcli.loader").load_config()
+      if not loaded_config then
+         log.error("Error loading config file:\n   %s", config_err)
          return 1
       end
       -- TODO: Keep some sort of database to not rebuild files that haven't been edited a la GNU Make or Tup
-      local exit = 0
 
-      -- TODO: this should probably be handled outside of the commands
-      for i, mod_name in ipairs(cfg.preload_modules or {}) do
-         util.teal.add_module(mod_name)
-      end
-      for i, path_name in ipairs(cfg.include_dir or {}) do
-         fs.add_to_teal_path(path_name)
-      end
-
-      local root = config.find_project_root()
-      if not root then
-         return 1
-      end
-      lfs.chdir(root)
+      lfs.chdir(fs.find_project_root())
       if not options.source_dir then
          options.source_dir = "."
       end
@@ -105,6 +90,7 @@ local build: Command = {
       end
       io.stdout:write("\n")
 
+      local exit = 0
       local step_size: number
       local total_steps = 0
       for file in fs.match(
@@ -167,7 +153,7 @@ local build: Command = {
                   ts[i] = nil
                else
                   local ok, err = coroutine.resume(t)
-                  if not ok or err as boolean then
+                  if not ok then
                      log.queue("error", "%s", err)
                      ts[i] = nil
                      exit = 1
@@ -208,7 +194,7 @@ local build: Command = {
       return exit
    end,
 
-   config = config.create_setters({
+   config = util.create_setters({
       build_dir = util.typechecker "string",
       source_dir = util.typechecker "string",
       keep_going = util.typechecker "boolean",

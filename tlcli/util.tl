@@ -69,6 +69,54 @@ function M.error_if_not<T>(condition: T, message: string): T
    return condition
 end
 
+function M.insert_into(src: table, snk: table)
+   for k, v in pairs(src) do
+      if v is table then
+         M.insert_into(v, snk[k])
+      else
+         snk[k] = v
+      end
+   end
+end
+
+local record Hook
+   name: string
+   called: boolean
+end
+local hooked_funcs: {function:Hook} = {}
+local function call_hook(name: string, func: function): function
+   hooked_funcs[func] = {
+      name = name,
+      called = false,
+   }
+   return function(...: any): any...
+      hooked_funcs[func].called = true
+      return func(...)
+   end
+end
+
+function M.create_setters(callbacks: {string:function}, options: {string:any}): function(string): function
+   return function(opt_name: string): function
+      if not callbacks[opt_name] then
+         -- TODO: throw an error? emit a warning?
+         return function() end
+      end
+      return function(...: any)
+         options[opt_name] = callbacks[opt_name](...)
+      end
+   end
+end
+
+function M.check_hooks(): {string}
+   local errs = {}
+   for k, v in pairs(hooked_funcs) do
+      if not v.called then
+         table.insert(errs, "option " .. v.name .. " was referenced, but not set")
+      end
+   end
+   return errs
+end
+
 local record TealError
    x: number
    y: number
@@ -178,7 +226,6 @@ end
 
 function M.teal.compile_and_write(input_filename: string, type_check: boolean, output_filename: string): boolean, string
    output_filename = output_filename or "teal.out.lua"
-   log.debug("opening file handle: %s", output_filename)
    local fh, ferr = io.open(output_filename, "w")
    if not fh then
       return nil, ferr

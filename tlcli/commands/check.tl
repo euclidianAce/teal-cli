@@ -1,7 +1,6 @@
 
 local argparse = require("argparse")
 local ansi = require("tlcli.ansi")
-local config = require("tlcli.config")
 local fs = require("tlcli.fs")
 local log = require("tlcli.log")
 local util = require("tlcli.util")
@@ -9,7 +8,6 @@ local util = require("tlcli.util")
 local types = require("tlcli.types")
 local Args = types.Args
 local Command = types.Command
-local Config = types.Config
 
 local b = ansi.bright
 local r = ansi.reset()
@@ -32,16 +30,9 @@ local check: Command = {
    end,
 
    command = function(args: Args): number
-      local cfg = config.load_local_config()
-      local exit = 0
+      require("tlcli.loader").load_config()
 
-      -- TODO: this should probably be handled outside of the commands
-      for i, mod_name in ipairs(cfg and cfg.preload_modules or {}) do
-         util.teal.add_module(mod_name)
-      end
-      for i, path_name in ipairs(cfg and cfg.include_dir or {}) do
-         fs.add_to_teal_path(path_name)
-      end
+      local exit = 0
 
       for i, fname in ipairs(args["script"] as {string}) do
          local ok, err = util.teal.type_check_file(fname)
@@ -66,7 +57,7 @@ local check: Command = {
       return exit
    end,
 
-   config = config.create_setters({
+   config = util.create_setters({
       keep_going = util.typechecker "boolean",
    }, options)
 }

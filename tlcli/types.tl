@@ -3,39 +3,22 @@ require("argparse")
 
 local record M
 
-   type GlobalConfig = record
-      include_dir: {string}
-      preload_modules: {string}
-      quiet: boolean
-      skip_compat53: boolean
-      type_dir: {string}
-   end
-
-   type Config = record
-      build_dir: string
-      exclude: {string}
-      files: {string}
-      include: {string}
-      include_dir: {string}
-      preload_modules: {string}
-      quiet: boolean
-      skip_compat53: boolean
-      source_dir: string
-   end
-
    type Args = {string:{string}|string|boolean}
    type Command = record
+
+      ---The main function of the command
       ---@param args   : the result from the argparser
       ---@return       : the exit code
-      type Callback = function(args: Args): number
+      command: function(args: Args): number
 
-      command: Callback
-      -- Interface to add argparse command
       name: string
       description: string
+
+      -- Interface to add argparse command
       argparse: function(ArgparseParser.Command)
 
-      config: function(string)
+      -- Interface to the config file
+      config: function(string): function(any)
    end
 
 end
