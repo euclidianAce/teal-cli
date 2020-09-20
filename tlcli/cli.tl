@@ -11,7 +11,7 @@ local types = require("tlcli.types")
 local Args = types.Args
 local Command = types.Command
 
---log.enable("debug")
+log.enable("debug")
 
 local par: ArgparseParser
 local function prep(): Args
@@ -52,12 +52,18 @@ local function prep(): Args
 
    local function add_cmd(cmd: Command)
       cmd.argparse(par:command(cmd.name, cmd.description))
+      loader.loaded_commands[cmd.name] = cmd
    end
 
-   -- TODO: user command loading
-   --for path in fs.dir(fs.CMD_PATH()) do
-      --add_cmd(loader.load_command(path))
-   --end
+   log.debug("Loading user commands...")
+   local user_commands, user_cmd_err = loader.load_user_commands()
+   if user_cmd_err then
+      log.error("Error loading user commands:\n%s", user_cmd_err)
+   end
+   log.debug("Got user commands: %s", require"inspect"(user_commands))
+   for i, v in ipairs(user_commands) do
+      add_cmd(v)
+   end
 
    local ok, args = par:pparse() as (boolean, Args)
    if not ok then

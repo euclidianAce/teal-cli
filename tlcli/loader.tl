@@ -20,13 +20,10 @@ local function find_command_path(name: string): string
 end
 
 local function load_command_from_path(path: string): Command, string
-   local fh, open_err = io.open(path, "r")
-   if not fh then
-      return nil, open_err
+   local chunk, err = util.teal.type_check_and_load(path)
+   if not chunk then
+      return nil, err
    end
-   local code = fh:read("*a")
-   fh:close()
-   local chunk, load_err = tl.load(code, path, "t")
    local ok, res = pcall(chunk) as (boolean, function)
    if not ok then
       return nil, res as string
@@ -35,10 +32,43 @@ local function load_command_from_path(path: string): Command, string
 end
 
 local function validate_command(t: table): boolean, string
-   if not typecheck(t.name, "string") then return nil, "name" end
-   if not typecheck(t.description, "string") then return nil, "description" end
-   if not typecheck(t.command, "function") then return nil, "command" end
-   if not typecheck(t.config, "function") then return nil, "config" end
+   if not typecheck(t.name, "string") then return nil, "Command missing name: string field" end
+   if not typecheck(t.description, "string") then return nil, "Command missing description: string field" end
+   if not typecheck(t.command, "function") then return nil, "Command missing command: function(Args): number field" end
+   if not typecheck(t.config, "function") then return nil, "Command missing config: function(any) field" end
+   return true
+end
+
+local loaded_files: {string:boolean} = {}
+function M.load_user_commands(): {Command}, string
+   log.debug("1")
+   local ret = true
+   local errors: {string} = {}
+   local commands: {Command} = {}
+   log.debug("Command path %s", fs.CMD_PATH())
+   for fname in fs.dir(fs.CMD_PATH()) do
+      log.debug("Trying file %s", fname)
+      if not loaded_files[fname] then
+         log.debug("loading user command from %s", fname)
+         local res, err = load_command_from_path(fname)
+         if err then
+            log.debug("Error loading command from path %s\n%s", fname, err)
+            ret = false
+            table.insert(errors, err)
+         else
+            local is_valid, reason = validate_command(res as table)
+            if not is_valid then
+               log.debug("Invalid command (%s)", reason)
+               ret = false
+               table.insert(errors, reason)
+            else
+               loaded_files[fname] = true
+               table.insert(commands, res)
+            end
+         end
+      end
+   end
+   return commands, #errors > 0 and table.concat(errors, "\n") or nil
 end
 
 function M.load_command(name: string): Command, string
