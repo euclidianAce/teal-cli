@@ -7,4 +7,5 @@ return {
    },
    source_dir = "tlcli",
    build_dir = "build/tlcli",
+   skip_compat53 = true,
 }

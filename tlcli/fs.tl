@@ -295,6 +295,13 @@ end
 
 local USER_HOME <const> = os.getenv("HOME")
 function fs.is_in_dir(dirname: string, filename: string): boolean
+   local dir_comps = fs.get_path_components(dirname)
+   local file_comps = fs.get_path_components(filename)
+   while file_comps[1] == dir_comps[1] do
+      table.remove(file_comps, 1)
+      table.remove(dir_comps, 1)
+   end
+   filename = fs.path_concat(file_comps)
    for file in lfs.dir(dirname) do
       if file == filename then
          return true

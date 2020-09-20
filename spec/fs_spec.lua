@@ -1,4 +1,6 @@
 
+local lfs = require("lfs")
+local util = require("spec.util")
 local assert = require("luassert")
 
 describe("tlcli.fs", function()
@@ -30,22 +32,140 @@ describe("tlcli.fs", function()
          }, generated)
       end)
    end)
-   describe("match", function()
-      pending("should correctly iterate over a directory", function()
+   describe("dir", function()
+      it("should correctly iterate over a directory", function()
+         local struct = {
+            "foo",
+            "bar",
+            "baz",
+         }
+         table.sort(struct)
+
+         local dir_name = util.create_dir(finally, struct)
+         local dir_paths = {}
+         for path in fs.dir(dir_name) do
+            table.insert(dir_paths, path)
+         end
+         table.sort(dir_paths)
+
+         for i, v in ipairs(struct) do
+            struct[i] = make_path{dir_name, v}
+         end
+         assert.are.same(struct, dir_paths)
       end)
-      pending("should correctly iterate over a directory with provided patterns", function()
+      it("should correctly iterate over nested directories", function()
+         local struct = {
+            foo = {
+               "bar",
+               baz = {
+                  "foo",
+                  "bar",
+                  "baz",
+               },
+            },
+            "bar",
+            "baz",
+         }
+
+         local dir_name = util.create_dir(finally, struct)
+         local dir_paths = {}
+         for path in fs.dir(dir_name) do
+            table.insert(dir_paths, path)
+         end
+         table.sort(dir_paths)
+
+         local expected_paths = util.structure_to_paths(struct, dir_name)
+         table.sort(expected_paths)
+         assert.are.same(expected_paths, dir_paths)
+      end)
+   end)
+   describe("match", function()
+      it("should correctly iterate over a directory with provided patterns", function()
+         local struct = {
+            "foo.tl",
+            "bar.tl",
+            "baz.tl",
+         }
+         table.sort(struct)
+
+         local dir_name = util.create_dir(finally, struct)
+         local dir_paths = {}
+         local cwd = lfs.currentdir()
+         assert(lfs.chdir(dir_name))
+         for path in fs.match(".", {"b*.tl"}) do
+            table.insert(dir_paths, path)
+         end
+         assert(lfs.chdir(cwd))
+         table.sort(dir_paths)
+
+         local expected = {"bar.tl", "baz.tl"}
+         table.sort(expected)
+         assert.are.same(expected, dir_paths)
       end)
    end)
    describe("is_in_dir", function()
-      pending("should correctly report if a given path is in another given path", function()
+      it("should correctly report if a given directory contains another file", function()
+         local dir_name = util.create_dir(finally, {
+            "hello"
+         })
+         assert(fs.is_in_dir(
+            dir_name,
+            make_path{dir_name, "hello"}
+         ))
+      end)
+      it("should correctly report if a given directory doesn't contain another file", function()
+         local dir_name = util.create_dir(finally, {
+            "hi"
+         })
+         assert(not fs.is_in_dir(
+            dir_name,
+            make_path{dir_name, "hello"}
+         ))
       end)
    end)
    describe("find_project_root", function()
-      pending("should find tlcconfig.lua in the current directory", function()
+      it("should find tlcconfig.lua in the current directory", function()
+         local dir_name = util.create_dir(finally, {
+            "tlcconfig.lua"
+         })
+
+         local cwd = lfs.currentdir()
+         assert(lfs.chdir(dir_name))
+
+         local found_path = fs.find_project_root()
+
+         assert(lfs.chdir(cwd))
+         assert.are.equal(dir_name, found_path)
       end)
-      pending("should find tlcconfig.lua in a parent directory", function()
+      it("should find tlcconfig.lua in a parent directory", function()
+         local dir_name = util.create_dir(finally, {
+            "tlcconfig.lua",
+            working_dir = {
+               "foo",
+            }
+         })
+
+         local cwd = lfs.currentdir()
+         assert(lfs.chdir(make_path{dir_name, "working_dir"}))
+
+         local found_path = fs.find_project_root()
+
+         assert(lfs.chdir(cwd))
+         assert.are.equal(dir_name, found_path)
       end)
-      pending("should return the current directory when there is no tlcconfig.lua", function()
+      it("should return the current directory when there is no tlcconfig.lua", function()
+         local dir_name = util.create_dir(finally, {
+            "stuff",
+            "things"
+         })
+
+         local cwd = lfs.currentdir()
+         assert(lfs.chdir(dir_name))
+
+         local found_path = fs.find_project_root()
+
+         assert(lfs.chdir(cwd))
+         assert.are.equal(dir_name, found_path)
       end)
    end)
 end)

@@ -20,7 +20,7 @@ end
 
 local function typecheck(obj, typestr)
    if type(obj) ~= typestr then
-      error("Expected " .. typestr .. ", got " .. type(obj), 2)
+      error("Expected " .. typestr .. ", got " .. type(obj), 3)
    end
 end
 
@@ -29,7 +29,7 @@ local function nilable_typecheck(obj, typestr)
       return
    end
    if type(obj) ~= typestr then
-      error("Expected " .. typestr .. ", got " .. type(obj), 2)
+      error("Expected " .. typestr .. ", got " .. type(obj), 3)
    end
 end
 
@@ -46,6 +46,21 @@ local function get_dir_structure(dirname)
       end
    end
    return structure
+end
+
+function M.structure_to_paths(structure, prefix)
+   prefix = prefix or ""
+   local paths = {}
+   for k, v in pairs(structure) do
+      if type(v) == "table" then
+         for _, p in ipairs(M.structure_to_paths(v, k)) do
+            table.insert(paths, prefix .. "/" .. p)
+         end
+      else
+         table.insert(paths, prefix .. "/" .. v)
+      end
+   end
+   return paths
 end
 
 local function insert_into(tab, files)
@@ -128,6 +143,12 @@ local function make_tmp_dir(finally)
       os.execute("rm -r " .. name)
    end)
    return name
+end
+
+function M.create_dir(finally, structure)
+   local dir_name = make_tmp_dir(finally)
+   populate_dir(dir_name, structure)
+   return dir_name
 end
 
 local valid_commands = {
