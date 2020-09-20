@@ -154,27 +154,25 @@ function M.run_mock_project(finally, t)
 
    nilable_typecheck(t.output, "string")
 
-   return function()
-      local name = make_tmp_dir(finally)
-      populate_dir(name, t.dir)
-      lfs.chdir(name)
+   local name = make_tmp_dir(finally)
+   populate_dir(name, t.dir)
+   lfs.chdir(name)
 
-      local pd = io.popen("tlc " .. t.command .. (t.args and " " .. table.concat(t.args, " ") or ""))
-      local actual_output = pd:read("*a")
-      local actual_pipe_result = {pd:close()}
+   local pd = io.popen("tlc " .. t.command .. (t.args and " " .. table.concat(t.args, " ") or "") .. " 2>&1")
+   local actual_output = pd:read("*a")
+   local actual_pipe_result = {pd:close()}
 
-      local expected_dir_structure = {}
-      insert_into(expected_dir_structure, t.dir)
-      insert_into(expected_dir_structure, t.generated)
-      local actual_dir_structure = get_dir_structure(name)
-      lfs.chdir(current_dir)
+   local expected_dir_structure = {}
+   insert_into(expected_dir_structure, t.dir)
+   insert_into(expected_dir_structure, t.generated)
+   local actual_dir_structure = get_dir_structure(name)
+   lfs.chdir(current_dir)
 
-      if t.output then
-         assert.are.equal(t.output, actual_output, "Output is not as expected")
-      end
-      assert.are.same(t.pipe_result, actual_pipe_result, "Pipe results are not as expected")
-      assert.are.same(expected_dir_structure, actual_dir_structure, "Directory structure is not as expected.")
+   if t.output then
+      assert.are.equal(t.output, actual_output, "Output is not as expected")
    end
+   assert.are.same(t.pipe_result, actual_pipe_result, "Pipe results are not as expected")
+   assert.are.same(expected_dir_structure, actual_dir_structure, "Directory structure is not as expected.")
 end
 
 return M
