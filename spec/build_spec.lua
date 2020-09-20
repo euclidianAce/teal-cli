@@ -3,9 +3,9 @@ local util = require("spec.util")
 
 local proj = util.run_mock_project
 
-describe("build command", function()
+describe("#build #command", function()
    util.do_setup(setup, teardown)
-   it("should compile everything by default #build #command", function()
+   it("should compile everything by default", function()
       proj(finally, {
          dir = {
             "tlcconfig.lua",
@@ -33,7 +33,7 @@ describe("build command", function()
          },
       })
    end)
-   it("should not compile when there is no config file #build #command", function()
+   it("should not compile when there is no config file", function()
       proj(finally, {
          dir = {
             "thing.tl",
@@ -44,7 +44,7 @@ describe("build command", function()
          generated = {},
       })
    end)
-   it("should only compile .tl files, not .lua or .d.tl files #build #command", function()
+   it("should only compile .tl files, not .lua or .d.tl files", function()
       proj(finally, {
          dir = {
             "thing.d.tl",
@@ -55,7 +55,7 @@ describe("build command", function()
          generated = {},
       })
    end)
-   it("should not compile things with type errors #build #command", function()
+   it("should not compile things with type errors", function()
       proj(finally, {
          dir = {
             "a.tl",
@@ -69,7 +69,7 @@ describe("build command", function()
          }
       })
    end)
-   it("should not do anything when provided non-relative paths #build #command", function()
+   it("should not do anything when provided non-relative paths", function()
       proj(finally, {
          dir = {
             ["tlcconfig.lua"] = [[build "build_dir" "/usr/bin/my_cool_application"]],
@@ -81,7 +81,7 @@ describe("build command", function()
       })
    end)
    describe("-p --pretend --dry-run", function()
-      it("should not compile anything #build #command", function()
+      it("should not compile anything", function()
          proj(finally, {
             dir = {
                "a.tl",

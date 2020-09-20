@@ -1,10 +1,10 @@
 
 local util = require("spec.util")
 
-describe("check command", function()
+describe("#check #command", function()
    local proj = util.run_mock_project
    util.do_setup(setup, teardown)
-   it("should type check a single file #check #command", function()
+   it("should type check a single file", function()
       proj(finally, {
          dir = {
             ["blah.tl"] = [[local x: string = "hi"]],
@@ -14,7 +14,7 @@ describe("check command", function()
          args = {"blah.tl"}
       })
    end)
-   it("should type check multiple files when given #check #command", function()
+   it("should type check multiple files when given", function()
       proj(finally, {
          dir = {
             ["blah.tl"] = [[local x: string = "hi"]],
@@ -27,7 +27,7 @@ describe("check command", function()
          args = {"blah.tl", "foo.tl", "bar.tl", "baz.tl"},
       })
    end)
-   it("should report type errors #check #command", function()
+   it("should report type errors", function()
       proj(finally, {
          dir = {
             ["foo.tl"] = [[local x: number = "hi"]],

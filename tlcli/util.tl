@@ -19,6 +19,9 @@ function M.typechecker(typename: string): function(any): any
 end
 function M.array_typechecker(typename: string): function({any}): {any}
    return function(x: {any}): {any}
+      if type(x) ~= "table" then
+         return nil
+      end
       for i, v in ipairs(x) do
          if type(v) ~= typename then
             return nil
