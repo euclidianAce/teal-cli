@@ -2,7 +2,7 @@
 project "deps" {
    "argparse",
    "inspect",
-   "luafilesystem"
+   "luafilesystem",
 }
 
 build "build_dir"  "tmp/tlcli/build"

@@ -20,28 +20,6 @@ local options: {string:any} = {
    build_dir = ".",
 }
 
--- check if all the parents to dirname exist, and if they don't, create them
-local parents_that_exist: {string:boolean} = {}
-local function check_parents(dirname: string): boolean, string
-   for parent in fs.path_parents(dirname) do
-      if not parents_that_exist[parent] then
-         local mode, err = lfs.attributes(parent, "mode") as (string, string)
-         if mode ~= "directory" then
-            if err and err:match("No such file or directory$") then
-               log.queue("normal", "Created directory %s", ansi.bright.green(parent))
-               lfs.mkdir(parent)
-               parents_that_exist[parent] = true
-            else
-               return false, "Parent " .. dirname .. " exists, but is not a directory"
-            end
-         else
-            parents_that_exist[parent] = true
-         end
-      end
-   end
-   return true
-end
-
 local threads: {string:{number:thread}} = {
    checkers = {},
    writers = {},
@@ -69,11 +47,31 @@ local build: Command = {
       lfs.chdir(fs.find_project_root())
       local src_dir: string = options.source_dir as string
       local build_dir: string = options.build_dir as string
-      if not src_dir then
-         src_dir = "."
-      end
-      if not build_dir then
-         build_dir = "."
+
+      -- check if all the parents to dirname exist, and if they don't, create them
+      local parents_that_exist: {string:boolean} = {}
+      local function check_parents(dirname: string): boolean, string
+         for parent in fs.path_parents(dirname) do
+            if not parents_that_exist[parent] then
+               local mode, err = lfs.attributes(parent, "mode") as (string, string)
+               if mode ~= "directory" then
+                  if err and err:match("No such file or directory$") then
+                     if args.pretend then
+                        log.queue("normal", "Would create directory %s", ansi.bright.green(parent))
+                     else
+                        log.queue("normal", "Created directory %s", ansi.bright.green(parent))
+                        lfs.mkdir(parent)
+                     end
+                     parents_that_exist[parent] = true
+                  else
+                     return false, "Parent " .. dirname .. " exists, but is not a directory"
+                  end
+               else
+                  parents_that_exist[parent] = true
+               end
+            end
+         end
+         return true
       end
 
       if util.error_if(
@@ -139,9 +137,15 @@ local build: Command = {
             draw_progress("Type checking", disp_file)
             b:add_progress(step_size)
 
-            local res = assert(util.teal.process(file, true))
+            local res, err = util.teal.process(file, true)
+            if err then
+               local start, finish = err:lower():find("^%s*error:?%s*")
+               if finish then
+                  err = err:sub(finish+1, -1)
+               end
+            end
 
-            coroutine.yield()
+            coroutine.yield(err)
             if not args["pretend"] then
                create_writer(function()
                   local fh = assert(io.open(output_file, "w"))
@@ -165,17 +169,22 @@ local build: Command = {
 
       step_size = 1 / total_steps
 
+      local function should_break(): boolean
+         return (not options.keep_going and exit ~= 0)
+      end
       local step = function(ts: {number:thread}): any
          while true do
+            if should_break() then break end
             for i, t in pairs(ts) do
                if coroutine.status(t) == "dead" then
                   ts[i] = nil
                else
                   local ok, err = coroutine.resume(t)
-                  if not ok then
+                  if not ok or err as boolean then
                      log.queue("error", "%s", err)
                      ts[i] = nil
                      exit = 1
+                     break
                   end
                end
                if i % 20 == 0 then
@@ -190,8 +199,12 @@ local build: Command = {
       local check_step = util.wrap_with(step, threads.checkers)
       local write_step = util.wrap_with(step, threads.writers)
 
-      while next(threads.checkers) or next(threads.writers) do
+      while next(threads.checkers)
+         or next(threads.writers)
+         and not should_break()
+      do
          check_step()
+         if should_break() then break end
          if options.keep_going as boolean
             or not next(threads.checkers)
             -- only write after checking everything in case of errors
@@ -208,6 +221,9 @@ local build: Command = {
       ansi.cursor.set_column(0)
       ansi.clear_line(2)
       ansi.cursor.up(1)
+      ansi.cursor.set_column(0)
+      io.flush()
+
       log.flush()
 
       return exit

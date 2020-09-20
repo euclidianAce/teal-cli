@@ -62,10 +62,15 @@ function M.load_command(name: string): Command, string
 end
 
 local opts: {string:any} = {}
+local str_array = util.array_typechecker "string"
 local config_env = setmetatable({
    project = util.create_setters({
-      include_dir = util.array_typechecker "string",
-      deps = util.array_typechecker "string",
+      include_dir = str_array,
+      preload_modules = str_array,
+      deps = str_array,
+   }, opts),
+   compiler = util.create_switches({
+      "skip_compat53"
    }, opts)
 }, {
    __index = function(env: table, key: any): any

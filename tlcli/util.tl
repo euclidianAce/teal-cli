@@ -116,6 +116,23 @@ function M.create_setters(callbacks: {string:function}, options: {string:any}): 
    end
 end
 
+local function to_set<T>(arr: {T}): {T:boolean}
+   local set: {T:boolean} = {}
+   for i, v in ipairs(arr) do
+      set[v] = true
+   end
+   return set
+end
+
+function M.create_switches(switch_names: {string}, options: {string:any}): function(string)
+   local names = to_set(switch_names)
+   return function(opt: string)
+      if names[opt] then
+         options[opt] = not options[opt]
+      end
+   end
+end
+
 function M.check_hooks(): {string}
    local errs = {}
    for k, v in pairs(hooked_funcs) do
@@ -177,11 +194,16 @@ end
 
 local tl_env: table
 local tl_modules: {string} = {}
+local compat53 = false
 
 local function teal_setup_env(lax: boolean, skip_compat53: boolean): table
    if not tl_env then
       tl_env = tl.init_env(lax, skip_compat53) as table
    end
+end
+
+function M.teal.set_compat53(b: boolean)
+   compat53 = b
 end
 
 function M.teal.add_module(name: string)
@@ -190,11 +212,11 @@ end
 
 -- TODO: use tl.Result once it's exposed
 function M.teal.type_check_file(filename: string): boolean, string
-   teal_setup_env(false, true)
-   local result = assert(
-      tl.process as function(string, table, any, table): table
-      (filename, tl_env, nil, tl_modules)
-   )
+   teal_setup_env(false, compat53)
+   local result, err = (tl.process as function(string, table, any, table): table, string)(filename, tl_env, nil, tl_modules)
+   if err then
+      return nil, err
+   end
    tl_env = result.env as table
 
    if #result.syntax_errors as table > 0 then
@@ -251,12 +273,12 @@ function M.teal.compile_and_write(input_filename: string, type_check: boolean, o
    return true
 end
 
-function M.teal.process(input_filename: string, type_check: boolean): table, string
-   teal_setup_env(false, true)
-   local result = assert(
-      tl.process as function(string, table, any, table): table
-      (input_filename, tl_env, nil, tl_modules)
-   )
+function M.teal.process(input_filename: string, type_check: boolean, compat53: boolean): table, string
+   teal_setup_env(false, compat53)
+   local result, err = (tl.process as function(string, table, any, table): table, string)(input_filename, tl_env, nil, tl_modules)
+   if err then
+      return nil, err
+   end
    tl_env = result.env as table
 
    if #result.syntax_errors as table > 0 then

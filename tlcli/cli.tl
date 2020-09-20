@@ -11,7 +11,7 @@ local types = require("tlcli.types")
 local Args = types.Args
 local Command = types.Command
 
-log.enable("debug")
+--log.enable("debug")
 
 local par: ArgparseParser
 local function prep(): Args
@@ -75,11 +75,16 @@ local function prep(): Args
    end
    loader.load_config()
    local options = loader.load_options()
+   log.debug("Options: %s", require"inspect"(options))
+   util.teal.set_compat53(not options.skip_compat53)
    for i, name in ipairs(options.deps as {string} or {}) do
       fs.add_to_path(fs.path_concat(fs.TYPES_PATH(), name))
    end
    for i, dir in ipairs(options.include_dir as {string} or {}) do
       fs.add_to_path(dir)
+   end
+   for i, modname in ipairs(options.preload_modules as {string} or {}) do
+      util.teal.add_module(modname)
    end
    return args
 end
