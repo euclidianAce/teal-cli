@@ -11,7 +11,7 @@ local types = require("tlcli.types")
 local Args = types.Args
 local Command = types.Command
 
-log.enable_level("debug")
+log.enable("debug")
 
 local par: ArgparseParser
 local function prep(): Args
@@ -70,8 +70,8 @@ local function prep(): Args
       os.exit(0)
    end
    if args.quiet then
-      log.disable_level("normal")
-      log.disable_level("verbose")
+      log.disable("normal")
+      log.disable("verbose")
    end
    loader.load_config()
    local options = loader.load_options()

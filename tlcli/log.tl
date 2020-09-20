@@ -34,40 +34,47 @@ local record QueuedMessage
 end
 local queue: {QueuedMessage} = {}
 
-function M.log(level: string, fmt: string, ...: any)
-   if enabled[level] then
-      local str = string.format(fmt .. "\n", ...)
-      local lines = str:gmatch(".-\n")
+local buffered = false
 
-      streams[level]:write(prefixes[level][1], lines())
-      for line in lines do
-         streams[level]:write(prefixes[level][2], line)
-      end
-   end
+function M.set_buffered(b: boolean)
+   buffered = b
 end
 
 function M.queue(level: string, fmt: string, ...: any)
-   table.insert(
-      queue,
-      {
-         level = level,
-         message = string.format(fmt, ...),
-      }
-   )
+   table.insert(queue, {
+      level = level,
+      message = string.format(fmt, ...),
+   })
+end
+
+local function raw_log(level: string, fmt: string, ...: any)
+   local str = string.format(fmt .. "\n", ...)
+   local lines = str:gmatch(".-\n")
+
+   streams[level]:write(prefixes[level][1], lines())
+   for line in lines do
+      streams[level]:write(prefixes[level][2], line)
+   end
+end
+
+function M.log(level: string, fmt: string, ...: any)
+   if enabled[level] then
+      (buffered and M.queue or raw_log)(level, fmt, ...)
+   end
 end
 
 function M.flush()
    for _, m in ipairs(queue) do
-      M.log(m.level, m.message)
+      raw_log(m.level, m.message)
    end
    queue = {}
 end
 
 function M.set_prefix(level: string, new_prefix: {string}) prefixes[level] = new_prefix end
 
-function M.enable_level(level: string)  enabled[level] = true end
-function M.disable_level(level: string) enabled[level] = nil end
-function M.toggle_level(level: string)  enabled[level] = not enabled[level] end
+function M.enable(level: string)  enabled[level] = true end
+function M.disable(level: string) enabled[level] = nil end
+function M.toggle(level: string)  enabled[level] = not enabled[level] end
 
 function M.is_enabled(level: string): boolean return enabled[level] end
 
@@ -81,11 +88,11 @@ function M.error(fmt: string, ...: any)  M.log("error",  fmt, ...) end
 function M.debug(fmt: string, ...: any)  M.log("debug",  fmt, ...) end
 
 --setmetatable(M, {
-   --__index = function(_: table, key: string): function(string, ...: any)
-      --return function(fmt: string, ...: any)
-         --M.log(key, fmt, ...)
-      --end
-   --end
+--__index = function(_: table, key: string): function(string, ...: any)
+--return function(fmt: string, ...: any)
+--M.log(key, fmt, ...)
+--end
+--end
 --})
 
 return M
