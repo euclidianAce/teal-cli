@@ -24,9 +24,14 @@ local gen: Command = {
          :args("+")
       cmd:option("-o --output", "Write to <filename> instead")
          :argname("<filename>")
+         :args(1)
    end,
 
    command = function(args: Args): number
+      if args.output and #args["script"] as {string} > 1 then
+         log.error("-o --output can only be used for one script")
+         return 1
+      end
       local exit = 0
       for i, fname in ipairs(args["script"] as {string}) do
          local code, err = util.teal.compile(fname)
@@ -36,7 +41,9 @@ local gen: Command = {
                break
             end
          else
-            local out_name = fs.get_output_file_name(fname)
+            -- Teal doesn't care for or/and without booleans
+            local out_name = (args.output as boolean
+               or fs.get_output_file_name(fname) as boolean) as string
             local disp_name = ansi.bright.yellow(out_name)
             local fh, oerr = io.open(out_name, "w")
             if not fh then
