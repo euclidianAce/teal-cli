@@ -174,6 +174,7 @@ function M.run_mock_project(finally, t)
    typecheck(t.pipe_result, "table")
 
    nilable_typecheck(t.output, "string")
+   nilable_typecheck(t.output_match, "string")
 
    local name = make_tmp_dir(finally)
    populate_dir(name, t.dir)
@@ -189,7 +190,9 @@ function M.run_mock_project(finally, t)
    local actual_dir_structure = get_dir_structure(name)
    lfs.chdir(current_dir)
 
-   if t.output then
+   if t.output_match then
+      assert.truthy(string.match(actual_output, t.output_match), "Output (" .. actual_output .. ") didn't match expected pattern: " .. t.output_match)
+   elseif t.output then
       assert.are.equal(t.output, actual_output, "Output is not as expected")
    end
    assert.are.same(t.pipe_result, actual_pipe_result, "Pipe results are not as expected")

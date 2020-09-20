@@ -293,6 +293,10 @@ function fs.get_output_file_name_components(filename: string): {string}
    return comps
 end
 
+function fs.is_absolute(path: string): boolean
+   return path:sub(1,1) == "/" --FIXME: windows
+end
+
 local USER_HOME <const> = os.getenv("HOME")
 function fs.is_in_dir(dirname: string, filename: string): boolean
    local dir_comps = fs.get_path_components(dirname)

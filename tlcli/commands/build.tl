@@ -67,8 +67,27 @@ local build: Command = {
       -- TODO: Keep some sort of database to not rebuild files that haven't been edited a la GNU Make or Tup
 
       lfs.chdir(fs.find_project_root())
-      if not options.source_dir then
-         options.source_dir = "."
+      local src_dir: string = options.source_dir as string
+      local build_dir: string = options.build_dir as string
+      if not src_dir then
+         src_dir = "."
+      end
+      if not build_dir then
+         build_dir = "."
+      end
+
+      if util.error_if(
+         fs.is_absolute(src_dir),
+         "Source directory (" .. ansi.bright.yellow(src_dir) .. ") is not relative"
+      ) then
+         return 1
+      end
+
+      if util.error_if(
+         fs.is_absolute(build_dir),
+         "Build directory (" .. ansi.bright.yellow(build_dir) .. ") is not relative"
+      ) then
+         return 1
       end
 
       local p = io.popen("stty size") --TODO: this isn't super portable, and the progress bar should be toggleable
@@ -94,17 +113,17 @@ local build: Command = {
       local step_size: number
       local total_steps = 0
       for file in fs.match(
-         options.source_dir as string,
+         src_dir,
          options.include as {string},
          options.exclude as {string}
       ) do
          local output_file = file
 
-         if options.source_dir and options.source_dir ~= "." then
-            output_file = output_file:sub(#options.source_dir as string + 2, -1)
+         if src_dir and src_dir ~= "." then
+            output_file = output_file:sub(#src_dir + 2, -1)
          end
-         if options.build_dir and options.build_dir ~= "." then
-            output_file = fs.path_concat(options.build_dir as string, output_file)
+         if build_dir and build_dir ~= "." then
+            output_file = fs.path_concat(build_dir, output_file)
          end
 
          output_file = output_file:sub(1, -3) .. "lua"

@@ -56,16 +56,22 @@ function M.generate<T>(generator: function(): T): {T}
 end
 
 function M.warn_if_not<T>(condition: T, message: string): T
-   if not condition then
-      log.warn(message)
-   end
+   if not condition then log.warn(message) end
+   return condition
+end
+
+function M.warn_if<T>(condition: T, message: string): T
+   if condition then log.warn(message) end
+   return condition
+end
+
+function M.error_if<T>(condition: T, message: string): T
+   if condition then log.error(message) end
    return condition
 end
 
 function M.error_if_not<T>(condition: T, message: string): T
-   if not condition then
-      log.error(message)
-   end
+   if not condition then log.error(message) end
    return condition
 end
 

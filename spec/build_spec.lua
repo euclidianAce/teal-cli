@@ -69,6 +69,17 @@ describe("build command", function()
          }
       })
    end)
+   it("should not do anything when provided non-relative paths #build #command", function()
+      proj(finally, {
+         dir = {
+            ["tlcconfig.lua"] = [[build "build_dir" "/usr/bin/my_cool_application"]],
+         },
+         command = "build",
+         pipe_result = util.exit_error,
+         generated = {},
+         output_match = "is not relative\n$",
+      })
+   end)
    describe("-p --pretend --dry-run", function()
       it("should not compile anything #build #command", function()
          proj(finally, {

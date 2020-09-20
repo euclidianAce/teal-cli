@@ -5,7 +5,7 @@ project "deps" {
    "luafilesystem"
 }
 
-build "build_dir"  "build/tlcli"
+build "build_dir"  "tmp/tlcli/build"
 build "source_dir" "tlcli"
 build "keep_going" (true)
 
