@@ -14,13 +14,13 @@ describe("tlcli.fs", function()
       sep = fs.get_path_separator()
    end)
    describe("path_components", function()
-      it("should be able to split a path string into its components", function()
+      it("should be able to split a path string into its components #fs #api", function()
          local comps = {"foo", "bar", "baz"}
          assert.are.same(comps, fs.get_path_components(make_path(comps)))
       end)
    end)
    describe("path_parents", function()
-      it("should be an iterator that generates all but the last component of a path", function()
+      it("should be an iterator that generates all but the last component of a path #fs #api", function()
          local comps = {"foo", "bar", "baz"}
          local generated = {}
          for parent in fs.path_parents(make_path(comps)) do
@@ -33,7 +33,7 @@ describe("tlcli.fs", function()
       end)
    end)
    describe("dir", function()
-      it("should correctly iterate over a directory", function()
+      it("should correctly iterate over a directory #fs #api", function()
          local struct = {
             "foo",
             "bar",
@@ -53,7 +53,7 @@ describe("tlcli.fs", function()
          end
          assert.are.same(struct, dir_paths)
       end)
-      it("should correctly iterate over nested directories", function()
+      it("should correctly iterate over nested directories #fs #api", function()
          local struct = {
             foo = {
                "bar",
@@ -80,7 +80,7 @@ describe("tlcli.fs", function()
       end)
    end)
    describe("match", function()
-      it("should correctly iterate over a directory with provided patterns", function()
+      it("should correctly iterate over a directory with provided patterns #fs #api", function()
          local struct = {
             "foo.tl",
             "bar.tl",
@@ -104,7 +104,7 @@ describe("tlcli.fs", function()
       end)
    end)
    describe("is_in_dir", function()
-      it("should correctly report if a given directory contains another file", function()
+      it("should correctly report if a given directory contains another file #fs #api", function()
          local dir_name = util.create_dir(finally, {
             "hello"
          })
@@ -113,7 +113,7 @@ describe("tlcli.fs", function()
             make_path{dir_name, "hello"}
          ))
       end)
-      it("should correctly report if a given directory doesn't contain another file", function()
+      it("should correctly report if a given directory doesn't contain another file #fs #api", function()
          local dir_name = util.create_dir(finally, {
             "hi"
          })
@@ -124,7 +124,7 @@ describe("tlcli.fs", function()
       end)
    end)
    describe("find_project_root", function()
-      it("should find tlcconfig.lua in the current directory", function()
+      it("should find tlcconfig.lua in the current directory #fs #api", function()
          local dir_name = util.create_dir(finally, {
             "tlcconfig.lua"
          })
@@ -137,7 +137,7 @@ describe("tlcli.fs", function()
          assert(lfs.chdir(cwd))
          assert.are.equal(dir_name, found_path)
       end)
-      it("should find tlcconfig.lua in a parent directory", function()
+      it("should find tlcconfig.lua in a parent directory #fs #api", function()
          local dir_name = util.create_dir(finally, {
             "tlcconfig.lua",
             working_dir = {
@@ -153,7 +153,7 @@ describe("tlcli.fs", function()
          assert(lfs.chdir(cwd))
          assert.are.equal(dir_name, found_path)
       end)
-      it("should return the current directory when there is no tlcconfig.lua", function()
+      it("should return the current directory when there is no tlcconfig.lua #fs #api", function()
          local dir_name = util.create_dir(finally, {
             "stuff",
             "things"

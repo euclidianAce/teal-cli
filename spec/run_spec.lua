@@ -4,7 +4,7 @@ local util = require("spec.util")
 describe("run command", function()
    local proj = util.run_mock_project
    util.do_setup(setup, teardown)
-   it("should run a simple .tl script", function()
+   it("should run a simple .tl script #run #command", function()
       proj(finally, {
          dir = {
             ["script.tl"] = [[print("hi")]],
@@ -14,7 +14,7 @@ describe("run command", function()
          args = {"script.tl"},
       })
    end)
-   it("should pass the arguments after the script name into that script via `_G.arg`", function()
+   it("should pass the arguments after the script name into that script via `_G.arg` #run #command", function()
       proj(finally, {
          dir = {
             ["script.tl"] = [[for i, v in ipairs(arg) do io.write(v, "-") end]],
@@ -24,7 +24,7 @@ describe("run command", function()
          args = {"script.tl", "a", "2", "C"},
       })
    end)
-   it("should pass the arguments after the script name into that script via `...`", function()
+   it("should pass the arguments after the script name into that script via `...` #run #command", function()
       proj(finally, {
          dir = {
             ["script.tl"] = [[for i, v in ipairs{...} do io.write(v, "-") end]],

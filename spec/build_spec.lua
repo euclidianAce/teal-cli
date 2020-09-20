@@ -5,7 +5,7 @@ local proj = util.run_mock_project
 
 describe("build command", function()
    util.do_setup(setup, teardown)
-   it("should compile everything by default", function()
+   it("should compile everything by default #build #command", function()
       proj(finally, {
          dir = {
             "tlcconfig.lua",
@@ -33,7 +33,7 @@ describe("build command", function()
          },
       })
    end)
-   it("should not compile when there is no config file", function()
+   it("should not compile when there is no config file #build #command", function()
       proj(finally, {
          dir = {
             "thing.tl",
@@ -44,7 +44,7 @@ describe("build command", function()
          generated = {},
       })
    end)
-   it("should only compile .tl files, not .lua or .d.tl files", function()
+   it("should only compile .tl files, not .lua or .d.tl files #build #command", function()
       proj(finally, {
          dir = {
             "thing.d.tl",
@@ -55,7 +55,7 @@ describe("build command", function()
          generated = {},
       })
    end)
-   it("should not compile things with type errors", function()
+   it("should not compile things with type errors #build #command", function()
       proj(finally, {
          dir = {
             "a.tl",
@@ -70,7 +70,7 @@ describe("build command", function()
       })
    end)
    describe("-p --pretend --dry-run", function()
-      it("should not compile anything", function()
+      it("should not compile anything #build #command", function()
          proj(finally, {
             dir = {
                "a.tl",

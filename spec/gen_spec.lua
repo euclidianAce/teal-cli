@@ -4,7 +4,7 @@ local util = require("spec.util")
 describe("gen command", function()
    local proj = util.run_mock_project
    util.do_setup(setup, teardown)
-   it("should generate a properly named file", function()
+   it("should generate a properly named file #gen #command", function()
       proj(finally, {
          dir = {"my_file.tl"},
          generated = {"my_file.lua"},
@@ -12,7 +12,7 @@ describe("gen command", function()
          args = {"my_file.tl"},
       })
    end)
-   it("should generate many files when provided with many arguments", function()
+   it("should generate many files when provided with many arguments #gen #command", function()
       proj(finally, {
          dir = {
             "my_file.tl",
@@ -39,7 +39,7 @@ describe("gen command", function()
       })
    end)
    describe("-o --output", function()
-      it("should generate a properly named file", function()
+      it("should generate a properly named file #gen #command", function()
          proj(finally, {
             dir = {"my_file.tl"},
             generated = {"a_cool_name_for_a_file.lua"},
@@ -47,7 +47,7 @@ describe("gen command", function()
             args = {"my_file.tl --output a_cool_name_for_a_file.lua"},
          })
       end)
-      it("should not work when given multiple files", function()
+      it("should not work when given multiple files #gen #command", function()
          proj(finally, {
             dir = {
                "my_file.tl",
