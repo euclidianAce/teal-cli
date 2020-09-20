@@ -1,18 +1,12 @@
 
-local lfs = require("lfs")
 local util = require("spec.util")
 
+local proj = util.run_mock_project
+
 describe("build command", function()
-   local starting_dir
-   setup(function()
-      starting_dir = lfs.currentdir()
-      assert(lfs.chdir("/tmp"))
-   end)
-   teardown(function()
-      assert(lfs.chdir(starting_dir))
-   end)
+   util.do_setup(setup, teardown)
    it("should compile everything by default", function()
-      util.run_mock_project(finally, {
+      proj(finally, {
          dir = {
             "tlcconfig.lua",
             "thing.tl",
@@ -26,9 +20,6 @@ describe("build command", function()
             },
          },
          command = "build",
-         config = {},
-         opts = {},
-         result = 0,
          generated = {
             "thing.lua",
             "blah.lua",
@@ -43,42 +34,36 @@ describe("build command", function()
       })
    end)
    it("should not compile when there is no config file", function()
-      util.run_mock_project(finally, {
+      proj(finally, {
          dir = {
             "thing.tl",
             "blah.tl",
          },
          command = "build",
-         opts = {},
-         result = 1,
+         pipe_result = util.exit_error,
          generated = {},
       })
    end)
    it("should only compile .tl files, not .lua or .d.tl files", function()
-      util.run_mock_project(finally, {
+      proj(finally, {
          dir = {
             "thing.d.tl",
             "blah.lua",
             "tlcconfig.lua"
          },
          command = "build",
-         opts = {},
-         config = {},
-         result = 0,
          generated = {},
       })
    end)
    it("should not compile things with type errors", function()
-      util.run_mock_project(finally, {
+      proj(finally, {
          dir = {
             "a.tl",
             ["b.tl"] = "local x: string = 5",
             "tlcconfig.lua",
          },
          command = "build",
-         opts = {},
-         config = {},
-         result = 1,
+         pipe_result = util.exit_error,
          generated = {
             "a.lua",
          }
@@ -86,7 +71,7 @@ describe("build command", function()
    end)
    describe("-p --pretend --dry-run", function()
       it("should not compile anything", function()
-         util.run_mock_project(finally, {
+         proj(finally, {
             dir = {
                "a.tl",
                "b.tl",
@@ -98,10 +83,7 @@ describe("build command", function()
                "tlcconfig.lua",
             },
             command = "build",
-            opts = {},
-            args = {pretend = true},
-            config = {},
-            result = 0,
+            args = {"-p"},
             generated = {},
          })
       end)

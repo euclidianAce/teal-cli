@@ -1,8 +1,9 @@
+local types_dir = os.getenv"HOME" .. "/dev/teal-types/types/"
 return {
    include_dir = {
-      os.getenv"HOME" .. "/dev/teal-types/types/inspect",
-      os.getenv"HOME" .. "/dev/teal-types/types/luafilesystem",
-      os.getenv"HOME" .. "/dev/teal-types/types/argparse",
+      types_dir .. "inspect",
+      types_dir .. "luafilesystem",
+      types_dir .. "argparse",
    },
    source_dir = "tlcli",
    build_dir = "build/tlcli",

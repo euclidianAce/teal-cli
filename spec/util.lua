@@ -1,15 +1,22 @@
 
 local lfs = require("lfs")
 local assert = require("luassert")
-local log = require("tlcli.log")
-log.disable_level("normal")
-log.disable_level("debug")
-log.disable_level("error")
-log.disable_level("warn")
 
 local current_dir = assert(lfs.currentdir())
 
 local M = {}
+
+M.exit_error = {nil, "exit", 1}
+M.exit_ok = {true, "exit", 0}
+
+function M.do_setup(setup, teardown)
+   setup(function()
+      assert(lfs.chdir("/tmp"))
+   end)
+   teardown(function()
+      assert(lfs.chdir(current_dir))
+   end)
+end
 
 local function typecheck(obj, typestr)
    if type(obj) ~= typestr then
@@ -138,36 +145,36 @@ function M.run_mock_project(finally, t)
 
    typecheck(t.dir, "table")
    nilable_typecheck(t.generated, "table")
-   typecheck(t.opts, "table")
+
    t.args = t.args or {}
    typecheck(t.args, "table")
-   nilable_typecheck(t.config, "table")
-   t.result = t.result or 0
-   typecheck(t.result, "number")
 
-   local name = make_tmp_dir(finally)
-   populate_dir(name, t.dir)
+   t.pipe_result = t.pipe_result or M.exit_ok
+   typecheck(t.pipe_result, "table")
 
-   local cmd = require("tlcli.commands." .. t.command)
+   nilable_typecheck(t.output, "string")
 
-   lfs.chdir(name)
-   cmd.config(t.opts)
-   local args = deep_merge_table({
-      [t.command] = true,
-      command = t.command,
-   }, t.args)
-   if not args["script"] then
-      args["script"] = {}
+   return function()
+      local name = make_tmp_dir(finally)
+      populate_dir(name, t.dir)
+      lfs.chdir(name)
+
+      local pd = io.popen("tlc " .. t.command .. (t.args and " " .. table.concat(t.args, " ") or ""))
+      local actual_output = pd:read("*a")
+      local actual_pipe_result = {pd:close()}
+
+      local expected_dir_structure = {}
+      insert_into(expected_dir_structure, t.dir)
+      insert_into(expected_dir_structure, t.generated)
+      local actual_dir_structure = get_dir_structure(name)
+      lfs.chdir(current_dir)
+
+      if t.output then
+         assert.are.equal(t.output, actual_output, "Output is not as expected")
+      end
+      assert.are.same(t.pipe_result, actual_pipe_result, "Pipe results are not as expected")
+      assert.are.same(expected_dir_structure, actual_dir_structure, "Directory structure is not as expected.")
    end
-   local result = cmd.command(args, t.config)
-   local expected_dir_structure = {}
-   insert_into(expected_dir_structure, t.dir)
-   insert_into(expected_dir_structure, t.generated)
-   local actual_dir_structure = get_dir_structure(name)
-   lfs.chdir(current_dir)
-
-   assert.are.same(expected_dir_structure, actual_dir_structure)
-   assert.are.equal(result, t.result)
 end
 
 return M

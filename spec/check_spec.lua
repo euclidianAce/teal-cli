@@ -2,19 +2,20 @@
 local util = require("spec.util")
 
 describe("check command", function()
+   local proj = util.run_mock_project
+   util.do_setup(setup, teardown)
    it("should type check a single file", function()
-      util.run_mock_project(finally, {
+      proj(finally, {
          dir = {
             ["blah.tl"] = [[local x: string = "hi"]],
          },
          expected = {},
          command = "check",
-         opts = {},
-         result = 0,
+         args = {"blah.tl"}
       })
    end)
    it("should type check multiple files when given", function()
-      util.run_mock_project(finally, {
+      proj(finally, {
          dir = {
             ["blah.tl"] = [[local x: string = "hi"]],
             ["foo.tl"] = [[local x: string = "hi"]],
@@ -23,16 +24,17 @@ describe("check command", function()
          },
          expected = {},
          command = "check",
-         opts = {},
-         args = {
-            script = {
-               "blah.tl",
-               "foo.tl",
-               "bar.tl",
-               "baz.tl",
-            }
+         args = {"blah.tl", "foo.tl", "bar.tl", "baz.tl"},
+      })
+   end)
+   it("should report type errors", function()
+      proj(finally, {
+         dir = {
+            ["foo.tl"] = [[local x: number = "hi"]],
          },
-         result = 0,
+         command = "check",
+         expected = {},
+         pipe_result = util.exit_error,
       })
    end)
 end)

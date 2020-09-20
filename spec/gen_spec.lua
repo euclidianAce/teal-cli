@@ -1,0 +1,16 @@
+
+local util = require("spec.util")
+
+describe("gen command", function()
+   util.do_setup(setup, teardown)
+   pending("should generate a properly named file", function()
+   end)
+   pending("should generate many files when provided with many arguments", function()
+   end)
+   describe("-o --output", function()
+      pending("should generate a properly named file", function()
+      end)
+      pending("should not work when given multiple files", function()
+      end)
+   end)
+end)
