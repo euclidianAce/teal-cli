@@ -123,7 +123,6 @@ local function to_set<T>(arr: {T}): {T:boolean}
    end
    return set
 end
-
 function M.create_switches(switch_names: {string}, options: {string:any}): function(string)
    local names = to_set(switch_names)
    return function(opt: string)

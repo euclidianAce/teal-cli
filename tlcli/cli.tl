@@ -11,8 +11,6 @@ local types = require("tlcli.types")
 local Args = types.Args
 local Command = types.Command
 
-log.enable("debug")
-
 local par: ArgparseParser
 local function prep(): Args
    par = argparse("tlc", "A command line interface to Teal, a minimalistic typed dialect of Lua.")
@@ -55,12 +53,10 @@ local function prep(): Args
       loader.loaded_commands[cmd.name] = cmd
    end
 
-   log.debug("Loading user commands...")
    local user_commands, user_cmd_err = loader.load_user_commands()
    if user_cmd_err then
       log.error("Error loading user commands:\n%s", user_cmd_err)
    end
-   log.debug("Got user commands: %s", require"inspect"(user_commands))
    for i, v in ipairs(user_commands) do
       add_cmd(v)
    end
@@ -81,7 +77,6 @@ local function prep(): Args
    end
    loader.load_config()
    local options = loader.load_options()
-   log.debug("Options: %s", require"inspect"(options))
    util.teal.set_compat53(not options.skip_compat53)
    for i, name in ipairs(options.deps as {string} or {}) do
       fs.add_to_path(fs.path_concat(fs.TYPES_PATH(), name))

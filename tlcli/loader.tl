@@ -41,24 +41,18 @@ end
 
 local loaded_files: {string:boolean} = {}
 function M.load_user_commands(): {Command}, string
-   log.debug("1")
    local ret = true
    local errors: {string} = {}
    local commands: {Command} = {}
-   log.debug("Command path %s", fs.CMD_PATH())
    for fname in fs.dir(fs.CMD_PATH()) do
-      log.debug("Trying file %s", fname)
       if not loaded_files[fname] then
-         log.debug("loading user command from %s", fname)
          local res, err = load_command_from_path(fname)
          if err then
-            log.debug("Error loading command from path %s\n%s", fname, err)
             ret = false
             table.insert(errors, err)
          else
             local is_valid, reason = validate_command(res as table)
             if not is_valid then
-               log.debug("Invalid command (%s)", reason)
                ret = false
                table.insert(errors, reason)
             else

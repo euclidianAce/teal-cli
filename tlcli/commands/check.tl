@@ -20,7 +20,11 @@ local long_log_str = log_str .. "\n"
    .. "   Use " .. b.magenta"tlc gen" .. b.yellow" %s\n"
    .. "      to generate " .. b.yellow"%s"
 
-local options: {string:any} = {}
+-- TODO: better err handler
+local flags = util.protected_proxy{
+   keep_going = false
+}
+
 local check: Command = {
    name = "check",
    description = [[Type check one or more Teal scripts.]],
@@ -39,7 +43,7 @@ local check: Command = {
          if not ok then
             log.error(err)
             exit = 1
-            if not options.keep_going then
+            if not flags.keep_going then
                break
             end
          else
@@ -57,9 +61,19 @@ local check: Command = {
       return exit
    end,
 
-   config = util.create_setters({
-      keep_going = util.typechecker "boolean",
-   }, options)
+   config = function(opt: string): function
+      if opt == "flags" then
+         return function(t: {string})
+            for i, v in ipairs(t) do
+               flags[v] = true
+            end
+         end
+      else
+         -- TODO warn
+         log.warn("Invalid option '%s'", tostring(opt))
+      end
+      return function() end
+   end
 }
 
 return check

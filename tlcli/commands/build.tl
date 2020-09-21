@@ -13,11 +13,16 @@ local types = require("tlcli.types")
 local Args = types.Args
 local Command = types.Command
 
-local options: {string:any} = {
+-- TODO: better err handler that says 'invalid option' or something
+local options: {string:any} = util.protected_proxy{
    include: {string} = {},
    exclude: {string} = {},
    source_dir = ".",
    build_dir = ".",
+}
+
+local flags: {string:boolean} = util.protected_proxy{
+   keep_going = false,
 }
 
 local threads: {string:{number:thread}} = {
@@ -43,6 +48,7 @@ local build: Command = {
          return 1
       end
       -- TODO: Keep some sort of database to not rebuild files that haven't been edited a la GNU Make or Tup
+      -- maybe make a .teal folder in the root of the project?
 
       lfs.chdir(fs.find_project_root())
       local src_dir: string = options.source_dir as string
@@ -170,7 +176,7 @@ local build: Command = {
       step_size = 1 / total_steps
 
       local function should_break(): boolean
-         return (not options.keep_going and exit ~= 0)
+         return (not flags.keep_going and exit ~= 0)
       end
       local step = function(ts: {number:thread}): any
          while true do
@@ -205,7 +211,7 @@ local build: Command = {
       do
          check_step()
          if should_break() then break end
-         if options.keep_going as boolean
+         if flags.keep_going as boolean
             or not next(threads.checkers)
             -- only write after checking everything in case of errors
             -- or if we don't care about errors
@@ -229,13 +235,21 @@ local build: Command = {
       return exit
    end,
 
-   config = util.create_setters({
-      build_dir = util.typechecker "string",
-      source_dir = util.typechecker "string",
-      keep_going = util.typechecker "boolean",
-      include = util.array_typechecker "string",
-      exclude = util.array_typechecker "string",
-   }, options)
+   config = function(opt: string): function
+      if opt == "flags" then
+         return function(t: {string})
+            for i, v in ipairs(t) do
+               flags[v] = true
+            end
+         end
+      elseif opt == "options" then
+         return function(t: {string:any})
+            for i, v in pairs(t) do
+               options[i] = v
+            end
+         end
+      end
+   end,
 }
 
 return build
