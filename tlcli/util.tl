@@ -248,8 +248,7 @@ function M.teal.type_check_and_load(filename: string): function, string
    end
    local chunk, lua_err = load(code, "@" .. filename) as (function, string)
    if err then
-      log.error("!!Error uncaught by Teal!!\n\t%s\n\n\tThis is probably a bug caused by Teal not catching invalid Lua.\n\tPlease consider reporting this at https://github.com/teal-language/tl\n\n", lua_err)
-      os.exit(1)
+      return nil, "Internal Compiler Error: Teal generator produced invalid Lua. Please report a bug at https://github.com/teal-language/tl\n\n" .. lua_err
    end
    return chunk
 end
@@ -295,5 +294,25 @@ end
 function M.teal.pretty_print_ast(result: table): string
    return (tl.pretty_print_ast as function(table): string)(result)
 end
+
+-- TODO: alter search path to allow for requires to work without structuring your project in a strange way
+--function M.src_dir_loader(actual_name: string, src_dir_name: string)
+   --return function(module_name: string)
+      --local altered_module_name = module_name:gsub(actual_name, src_dir_name)
+      --local found_filename, fd, tried = tl.search_module(altered_module_name, true)
+      --if found_filename then
+         --local code = fd:read("*a")
+         --fd:close()
+         --local chunk, err = tl.load(code, found_filename, "t", setmetatable({}, {__index = _G}))
+         --if chunk then
+            --return function()
+               --local ret = chunk()
+               --package.loaded[module_name] = ret
+               --return ret
+            --end
+         --end
+      --end
+   --end
+--end
 
 return M

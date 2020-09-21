@@ -8,7 +8,6 @@ local util = require("tlcli.util")
 local Args = require("tlcli.types").Args
 local Command = require("tlcli.types").Command
 
-local options = util.protected_proxy {}
 local run: Command = {
    name = "run",
    description = [[Run a Teal script.]],

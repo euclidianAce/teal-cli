@@ -10,10 +10,5 @@ build "options" {
    source_dir = "tlcli",
 }
 
-build "flags" {
-   "keep_going"
-}
-
-check "flags" {
-   "keep_going"
-}
+build "flags" { "keep_going" }
+check "flags" { "keep_going" }
