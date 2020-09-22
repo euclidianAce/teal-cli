@@ -193,16 +193,17 @@ end
 
 local tl_env: table
 local tl_modules: {string} = {}
-local compat53 = false
+local skip_compat53 = false
 
-local function teal_setup_env(lax: boolean, skip_compat53: boolean): table
+local function teal_setup_env(lax: boolean): table
    if not tl_env then
       tl_env = tl.init_env(lax, skip_compat53) as table
    end
 end
 
-function M.teal.set_compat53(b: boolean)
-   compat53 = b
+function M.teal.set_skip_compat53(b: boolean)
+   log.debug("Setting compat53 to %s", tostring(b))
+   skip_compat53 = b
 end
 
 function M.teal.add_module(name: string)
@@ -211,7 +212,7 @@ end
 
 -- TODO: use tl.Result once it's exposed
 function M.teal.type_check_file(filename: string): boolean, string
-   teal_setup_env(false, compat53)
+   teal_setup_env(false)
    local result, err = (tl.process as function(string, table, any, table): table, string)(filename, tl_env, nil, tl_modules)
    if err then
       return nil, err
@@ -271,8 +272,8 @@ function M.teal.compile_and_write(input_filename: string, type_check: boolean, o
    return true
 end
 
-function M.teal.process(input_filename: string, type_check: boolean, compat53: boolean): table, string
-   teal_setup_env(false, compat53)
+function M.teal.process(input_filename: string, type_check: boolean): table, string
+   teal_setup_env(false)
    local result, err = (tl.process as function(string, table, any, table): table, string)(input_filename, tl_env, nil, tl_modules)
    if err then
       return nil, err

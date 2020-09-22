@@ -19,7 +19,7 @@ function M.reset(): string
    return reset
 end
 
-local dark = {
+local dark: {string:string} = {
    black = "30m",
    red = "31m",
    green = "32m",
@@ -30,7 +30,7 @@ local dark = {
    white = "37m",
 }
 
-local bright = {
+local bright: {string:string} = {
    black = "90m",
    red = "91m",
    green = "92m",

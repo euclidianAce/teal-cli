@@ -13,7 +13,7 @@ local record Bar
 end
 local bar_mt = {
    __index = Bar,
-   __name = "tlcli.ui.bar"
+   -- __name = "tlcli.ui.bar"
 }
 
 function Bar:draw(stream: FILE)

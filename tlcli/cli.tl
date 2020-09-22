@@ -77,7 +77,7 @@ local function prep(): Args
    end
    loader.load_config()
    local options = loader.load_options()
-   util.teal.set_compat53(not options.skip_compat53)
+   util.teal.set_skip_compat53(options.skip_compat53 as boolean)
    for i, name in ipairs(options.deps as {string} or {}) do
       fs.add_to_path(fs.path_concat(fs.TYPES_PATH(), name))
    end
