@@ -43,6 +43,7 @@ local build: Command = {
    end,
 
    command = function(args: Args): number
+      log.set_buffered(true)
       local loaded_config, config_err = loader.load_config()
       local global_options = loader.load_options()
 
@@ -51,9 +52,6 @@ local build: Command = {
          return 1
       end
 
-      -- TODO: Keep some sort of database to not rebuild files that haven't been edited a la GNU Make or Tup
-      -- maybe make a .teal folder in the root of the project?
-
       lfs.chdir(fs.find_project_root())
       local src_dir: string = options.source_dir as string
       local build_dir: string = options.build_dir as string
@@ -61,7 +59,7 @@ local build: Command = {
       if global_options.modules then
          local mod_map = global_options.modules as {string:string}
          -- TODO: make this actually work for multiple modules
-         log.queue("debug", "[build command] hijacking module searching...")
+         log.debug("[build command] hijacking module searching...")
          for src_file, mod_name in pairs(mod_map) do
             util.hijack_tl_search_module(mod_name, src_file)
          end
@@ -76,9 +74,9 @@ local build: Command = {
                if mode ~= "directory" then
                   if err and err:match("No such file or directory$") then
                      if args.pretend then
-                        log.queue("normal", "Would create directory %s", ansi.bright.green(parent))
+                        log.normal("Would create directory %s", ansi.bright.green(parent))
                      else
-                        log.queue("normal", "Created directory %s", ansi.bright.green(parent))
+                        log.normal("Created directory %s", ansi.bright.green(parent))
                         lfs.mkdir(parent)
                      end
                      parents_that_exist[parent] = true
@@ -124,17 +122,25 @@ local build: Command = {
          io.stdout:write(step, ": ", fname, "\n")
          b:draw(io.stdout)
       end
-      io.stdout:write("\n")
+
+      local function is_source_newer(source_path: string, target_path: string): boolean
+         local src_mod_time = lfs.attributes(source_path, "modification")
+         local target_mod_time = lfs.attributes(target_path, "modification")
+         if not target_mod_time then
+            return true
+         end
+         return src_mod_time > target_mod_time
+      end
 
       local exit = 0
       local step_size: number
       local total_steps = 0
-      for file in fs.match(
+      for input_file in fs.match(
          src_dir,
          options.include,
          options.exclude
       ) do
-         local output_file = file
+         local output_file = input_file
 
          if src_dir ~= "." then
             output_file = output_file:sub(#src_dir + 2, -1)
@@ -145,45 +151,50 @@ local build: Command = {
 
          output_file = output_file:sub(1, -3) .. "lua"
 
-         draw_progress("Preparing", "Parent directories")
          assert(check_parents(output_file))
 
-         local disp_file = ansi.bright.yellow(file)
+         local disp_file = ansi.bright.yellow(input_file)
          local disp_output_file = ansi.bright.yellow(output_file)
-         draw_progress("Preparing", disp_file)
 
-         create_checker(function()
-            draw_progress("Type checking", disp_file)
-            b:add_progress(step_size)
-
-            local res, err = util.teal.process(file, true)
-            if err then
-               local start, finish = err:lower():find("^%s*error:?%s*")
-               if finish then
-                  err = err:sub(finish+1, -1)
-               end
-            end
-
-            coroutine.yield(err)
-            if not args["pretend"] then
-               create_writer(function()
-                  local fh = assert(io.open(output_file, "w"))
-
-                  draw_progress("Writing", disp_output_file)
-
-                  local ok = fh:write(util.teal.pretty_print_ast(res.ast as table))
-
-                  b:add_progress(step_size)
-
-                  assert(fh:close())
-                  log.queue("normal", "Wrote %s", disp_output_file)
-               end)
-            else
+         if is_source_newer(input_file, output_file) then
+            create_checker(function()
+               draw_progress("Type checking", disp_file)
                b:add_progress(step_size)
-               log.queue("normal", "Would write %s", disp_output_file)
-            end
-         end)
-         total_steps = total_steps + 2
+
+               local res, err = util.teal.process(input_file, true)
+               if err then
+                  local start, finish = err:lower():find("^%s*error:?%s*")
+                  if finish then
+                     err = err:sub(finish+1, -1)
+                  end
+               end
+
+               coroutine.yield(err)
+               if not args["pretend"] then
+                  create_writer(function()
+                     local fh = assert(io.open(output_file, "w"))
+
+                     draw_progress("Writing", disp_output_file)
+
+                     local ok = fh:write(util.teal.pretty_print_ast(res.ast as table))
+
+                     b:add_progress(step_size)
+
+                     assert(fh:close())
+                     log.normal("Wrote %s", disp_output_file)
+                  end)
+               else
+                  b:add_progress(step_size)
+                  log.normal("Would write %s", disp_output_file)
+               end
+            end)
+            total_steps = total_steps + 2
+         end
+      end
+
+      if total_steps == 0 then
+         log.normal("Nothing to build...")
+         return 0
       end
 
       step_size = 1 / total_steps
@@ -200,7 +211,7 @@ local build: Command = {
                else
                   local ok, err = coroutine.resume(t)
                   if not ok or err as boolean then
-                     log.queue("error", "%s", err)
+                     log.error("%s", err)
                      ts[i] = nil
                      exit = 1
                      break
@@ -218,6 +229,7 @@ local build: Command = {
       local check_step = util.wrap_with(step, threads.checkers)
       local write_step = util.wrap_with(step, threads.writers)
 
+      io.stdout:write("\n")
       while next(threads.checkers)
          or next(threads.writers)
          and not should_break()
@@ -242,7 +254,6 @@ local build: Command = {
       ansi.cursor.up(1)
       ansi.cursor.set_column(0)
       io.flush()
-
       log.flush()
 
       return exit

@@ -50,9 +50,9 @@ function M.wrap_with<T, K>(func: (function(T): K), arg: T): function(): K
    end
 end
 
-function M.generate<T>(generator: function(): T): {T}
+function M.generate<T>(generator: (function(): T), ...: any): {T}
    local results: {T} = {}
-   for value in generator do
+   for value in generator, ... do
       table.insert(results, value)
    end
    return results

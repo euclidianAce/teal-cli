@@ -98,6 +98,7 @@ return function()
    local args = prep()
    tl.loader()
    local exit = loader.loaded_commands[args.command as string].command(args)
+   log.flush()
    util.check_hooks()
    os.exit(exit)
 end
