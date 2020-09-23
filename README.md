@@ -41,12 +41,12 @@ This type signature is illustrated more clearly by an example
 
 ```lua
 build "options" {
-	source_dir = "src",
-	build_dir = "build",
+   source_dir = "src",
+   build_dir = "build",
 }
 
 build "flags" {
-	"keep_going"
+   "keep_going"
 }
 ```
 
@@ -57,32 +57,53 @@ In short, the function signature takes advantage of Lua's syntactic sugar to mak
 Coming Eventually™
 
 # Features
+This is intended to be a build system first and foremost. So most features are within the `build` command itself
+ - `build`
+ 	- can be run from anywhere within your project, not just the root
+	- only compiles when sources have changed, similar to Make and other build tools
+	- your source directory doesn't have to be the same name as your module to compile, if you provide a `{string:string}` map to `project "modules"`, Teal will know how to search for your modules
+	for example: if our project was laid out as such
+	```
+	src/
+	   | thing.tl
+	   | stuff.tl
+	```
+	and `thing.tl` had a `require("this_module.stuff")`, normal type checking wouldn't work, since by default, module searching can not be modified in such a way to accomodate this
+	and Teal wouldn't find `this_module`, but if we specify in `tlcconfig.lua`:
+	```lua
+	project "modules" {
+	   ["src"] = "this_module"
+	}
+	build "options" {
+	   source_dir = "src",
+	   build_dir = "build",
+	}
+	```
+	then it builds fine and is properly type checked.
+	(Internally this is currently done with a tiny but non-harmful hack that can hopefully be implemented in upstream Teal)
  - Colored output/fun ANSI stuffs
- - `build` can be run from anywhere within your project, not just the root
  - A pretty okay api
  - A (subjectively) better config format
  - listing dependencies in your `tlcconfig.lua` will add the appropriate paths to find type definitions, provided you have the [teal-types](https://github.com/teal-language/teal-types) repo installed in `$XDG_CONFIG_HOME/teal`, so instead of the current `include_dir` solution:
 ```lua
 return {
-	include_dir = {
-		my_types_dir .. "/argparse",
-		my_types_dir .. "/luafilesystem",
-	}
+   include_dir = {
+      my_types_dir .. "/argparse",
+      my_types_dir .. "/luafilesystem",
+   }
 }
 ```
 you can do the following:
 ```lua
 project "deps" {
-	"argparse",
-	"luafilesystem",
+   "argparse",
+   "luafilesystem",
 }
 ```
  -
 
 ## Planned Features
- - When building, modify the `package.path` so that your source_dir doesn't have to have the same name as your module
  - Integration with C tools, or at the very least, be able to specify C source and a C compiler when building
- - Tracking file changes for efficient `build`s like Make
  - Have a config option to point to the teal-types install location rather than force it to be in `$XDG_CONFIG_HOME/teal`
  - an `install` command and/or integration with luarocks' `install` command
  - better luarocks integration such as auto-generating rockspecs that install `.tl` files in the correct place
