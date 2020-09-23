@@ -8,13 +8,14 @@ local fs = require("tlcli.fs")
 local log = require("tlcli.log")
 local util = require("tlcli.util")
 local bar = require("tlcli.ui.bar")
+local loader = require("tlcli.loader")
 
 local types = require("tlcli.types")
 local Args = types.Args
 local Command = types.Command
 
 -- TODO: better err handler that says 'invalid option' or something
-local options: {string:any} = util.protected_proxy{
+local options = util.protected_proxy{
    include: {string} = {},
    exclude: {string} = {},
    source_dir = ".",
@@ -42,17 +43,29 @@ local build: Command = {
    end,
 
    command = function(args: Args): number
-      local loaded_config, config_err = require("tlcli.loader").load_config()
+      local loaded_config, config_err = loader.load_config()
+      local global_options = loader.load_options()
+
       if not loaded_config then
          log.error("Error loading config file:\n   %s", config_err)
          return 1
       end
+
       -- TODO: Keep some sort of database to not rebuild files that haven't been edited a la GNU Make or Tup
       -- maybe make a .teal folder in the root of the project?
 
       lfs.chdir(fs.find_project_root())
       local src_dir: string = options.source_dir as string
       local build_dir: string = options.build_dir as string
+
+      if global_options.modules then
+         local mod_map = global_options.modules as {string:string}
+         -- TODO: make this actually work for multiple modules
+         log.queue("debug", "[build command] hijacking module searching...")
+         for src_file, mod_name in pairs(mod_map) do
+            util.hijack_tl_search_module(mod_name, src_file)
+         end
+      end
 
       -- check if all the parents to dirname exist, and if they don't, create them
       local parents_that_exist: {string:boolean} = {}
@@ -118,15 +131,15 @@ local build: Command = {
       local total_steps = 0
       for file in fs.match(
          src_dir,
-         options.include as {string},
-         options.exclude as {string}
+         options.include,
+         options.exclude
       ) do
          local output_file = file
 
-         if src_dir and src_dir ~= "." then
+         if src_dir ~= "." then
             output_file = output_file:sub(#src_dir + 2, -1)
          end
-         if build_dir and build_dir ~= "." then
+         if build_dir ~= "." then
             output_file = fs.path_concat(build_dir, output_file)
          end
 
@@ -245,7 +258,7 @@ local build: Command = {
       elseif opt == "options" then
          return function(t: {string:any})
             for i, v in pairs(t) do
-               options[i] = v
+               options as {string:any}[i] = v
             end
          end
       end

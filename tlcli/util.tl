@@ -166,29 +166,30 @@ local function concat_errors(errs: {TealError}): string
 end
 
 local fstr <const> = "Attempt to %s protected table <%s>\n   with key \"%s\" %s%s"
-function M.protected_proxy(t: {string:any}, err_handler: function(string)): {string:any}
+function M.protected_proxy<T>(t: T, err_handler: function(string)): T
+   assert(t is table)
    err_handler = err_handler or log.warn as function(string)
    local usage: {string} = {}
-   for k, v in pairs(t) do
-      table.insert(usage, k .. ": " .. type(v))
+   for k, v in pairs(t as table) do
+      table.insert(usage, tostring(k) .. ": " .. type(v))
    end
    local usage_str = "\nValid entries for " .. tostring(t) .. " {\n   " .. table.concat(usage, "\n   ") .. "\n}"
    return setmetatable({}, {
       __index = function(_: table, key: any): any
-         if t[key as string] == nil then
+         if t as table [key as string] == nil then
             err_handler(fstr:format("__index", tostring(t), tostring(key), "", usage_str))
             return
          end
-         return t[key as string]
+         return t as table [key as string]
       end,
       __newindex = function(_: table, key: any, val: any)
-         if t[key as string] == nil then
+         if t as table [key as string] == nil then
             err_handler(fstr:format("__index", tostring(t), tostring(key), "and " .. type(val) .. " value " .. tostring(val), usage_str))
             return
          end
-         rawset(t, key as string, val)
+         rawset(t as table, key as string, val)
       end,
-   })
+   }) as T
 end
 
 local tl_env: table
@@ -296,24 +297,44 @@ function M.teal.pretty_print_ast(result: table): string
    return (tl.pretty_print_ast as function(table): string)(result)
 end
 
--- TODO: alter search path to allow for requires to work without structuring your project in a strange way
---function M.src_dir_loader(actual_name: string, src_dir_name: string)
-   --return function(module_name: string)
-      --local altered_module_name = module_name:gsub(actual_name, src_dir_name)
-      --local found_filename, fd, tried = tl.search_module(altered_module_name, true)
-      --if found_filename then
-         --local code = fd:read("*a")
-         --fd:close()
-         --local chunk, err = tl.load(code, found_filename, "t", setmetatable({}, {__index = _G}))
-         --if chunk then
-            --return function()
-               --local ret = chunk()
-               --package.loaded[module_name] = ret
-               --return ret
-            --end
-         --end
-      --end
-   --end
---end
+-- 1337H4XX0R: Horrible awful evil hack
+-- TODO: allow some sort of override in tl itself for this sort of thing?
+local old_tl_search_module = tl.search_module
+
+local module_name_map: {string:string} = {}
+
+local function make_hijacked_search_module(require_prefix: string, actual_name: string): function(string, boolean): string, FILE, {string}
+   return function(module_name: string): string, FILE, {string}
+      local found: string
+      local tried: {string} = {}
+
+      local altered_module_name = module_name:gsub("^" .. require_prefix, actual_name)
+      altered_module_name = altered_module_name:gsub("%.", "/") -- FIXME: put path separator in a more common place to util and fs can use it
+      log.queue("debug", [[Attempting to load module with modified name
+      expected prefix:  %s
+   replacement prefix:  %s
+
+      module required:  %s
+         altered name:  %s
+      ]], require_prefix, actual_name, module_name, altered_module_name)
+      local found, fd, tried = old_tl_search_module(altered_module_name, true)
+      if found then
+         return found, fd
+      end
+      log.queue("debug", "didn't find modified module name, trying regular...")
+      local found, fd, also_tried = old_tl_search_module(module_name, true)
+      if found then
+         return found, fd
+      end
+      for _, v in ipairs(also_tried) do
+         table.insert(tried, "no file '" .. v .. "'")
+      end
+      return nil, nil, tried
+   end
+end
+
+function M.hijack_tl_search_module(require_prefix: string, actual_name: string)
+   tl.search_module = make_hijacked_search_module(require_prefix, actual_name)
+end
 
 return M

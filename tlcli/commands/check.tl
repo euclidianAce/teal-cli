@@ -15,13 +15,13 @@ local r = ansi.reset()
 -- TODO: define a colorscheme for this type of stuff
 local log_str = b.green"Type checked: " .. b.yellow"%s"
 local long_log_str = log_str .. "\n"
-   .. "   Use " .. b.magenta"tlc run " .. b.yellow" %s\n"
+   .. "   Use " .. b.magenta"tlc run" .. b.yellow" %s\n"
    .. "      to run " .. b.yellow"%s" .. " as a script\n"
    .. "   Use " .. b.magenta"tlc gen" .. b.yellow" %s\n"
    .. "      to generate " .. b.yellow"%s"
 
 -- TODO: better err handler
-local flags = util.protected_proxy{
+local flags: {string:boolean} = util.protected_proxy{
    keep_going = false
 }
 

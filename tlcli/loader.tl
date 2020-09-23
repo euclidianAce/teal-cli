@@ -92,6 +92,7 @@ local config_env = setmetatable({
       include_dir = str_array,
       preload_modules = str_array,
       deps = str_array,
+      modules = str_array,
    }, opts),
    compiler = util.create_switches({
       "skip_compat53"
