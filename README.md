@@ -1,6 +1,8 @@
 # teal-cli: an unofficial command line interface to the Teal compiler
 [Teal is a typed dialect of Lua, get it here](https://github.com/teal-language/tl)
 
+![A gif of the tool building itself with the "tlc build" command, showing color coded output and a progress bar](media/teal-cli.gif)
+
 ## Why use this over the official one?
  - This is an experimental attempt to make the interface a little more friendly looking (internally and externally)
  - Having the compiler separate from the cli means that it can be written in Teal itself a little more easily
@@ -30,6 +32,10 @@ luarocks install --server=https://luarocks.org/dev teal-cli
 5. To see if it works, try running `tlc build` in the repo, it should build the project into a `tmp` dir it creates
 
 # Usage
+
+```
+tlc <command>
+```
 
 ## Current Commands
 Currently the same as upstream `tl`.
