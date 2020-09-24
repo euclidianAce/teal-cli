@@ -56,13 +56,10 @@ local build: Command = {
       local src_dir: string = options.source_dir as string
       local build_dir: string = options.build_dir as string
 
-      if global_options.modules then
-         local mod_map = global_options.modules as {string:string}
-         -- TODO: make this actually work for multiple modules
+      if global_options.module then
          log.debug("[build command] hijacking module searching...")
-         for src_file, mod_name in pairs(mod_map) do
-            util.hijack_tl_search_module(mod_name, src_file)
-         end
+         local mod = global_options.module as {string:string}
+         util.hijack_tl_search_module(mod.name, mod.source)
       end
 
       -- check if all the parents to dirname exist, and if they don't, create them

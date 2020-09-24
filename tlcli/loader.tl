@@ -87,13 +87,24 @@ end
 
 local opts: {string:any} = {}
 local str_array = util.array_typechecker "string"
+local str_map = util.map_typechecker("string", "string")
 local config_env = setmetatable({
    project = util.create_setters({
       include_dir = str_array,
       preload_modules = str_array,
       deps = str_array,
-      modules = str_array,
-   }, opts),
+      module = function(x: {string:string}): {string:string}
+         if not str_map(x) then
+            return
+         end
+         if not x.name or not x.source then
+            return
+         end
+         return x
+      end
+   }, opts, function(unknown_opt: any)
+      log.warn("Unknown option for `project` config: %s", tostring(unknown_opt))
+   end),
    compiler = util.create_switches({
       "skip_compat53"
    }, opts)

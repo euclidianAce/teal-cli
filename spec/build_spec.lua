@@ -55,22 +55,22 @@ describe("#build #command", function()
          generated = {},
       })
    end)
-   pending("should not compile things with type errors", function()
-      proj(finally, {
-         dir = {
-            "a.tl",
-            ["b.tl"] = "local x: string = 5",
-            ["tlcconfig.lua"] = [[build "keep_going" (true)]], -- TODO: build order is not deterministic, but if this option isn't set, the build stops. So figure out something
-            -- TODO: probably just check that it didn't compile anything and test this config option separately
-         },
-         command = "build",
-         pipe_result = util.exit_error,
-         generated = {
-            "a.lua",
-         }
-      })
+   describe("--keep-going option", function()
+      pending("should not compile things with type errors", function()
+         proj(finally, {
+            dir = {
+               "a.tl",
+               ["b.tl"] = "local x: string = 5",
+               ["tlcconfig.lua"] = [[build "keep_going" (true)]], -- TODO: build order is not deterministic, but if this option isn't set, the build stops. So figure out something
+               -- TODO: probably just check that it didn't compile anything and test this config option separately
+            },
+            command = "build",
+            pipe_result = util.exit_error,
+            generated = { "a.lua", }
+         })
+      end)
    end)
-   it("should not do anything when provided non-relative paths", function()
+   pending("should not do anything when provided non-relative paths", function()
       proj(finally, {
          dir = {
             ["tlcconfig.lua"] = [[build "build_dir" "/usr/bin/my_cool_application"]],
@@ -78,7 +78,8 @@ describe("#build #command", function()
          command = "build",
          pipe_result = util.exit_error,
          generated = {},
-         -- output_match = "is not relative\n$",
+         -- TODO: just check the error message
+         output_match = "is not relative\n$",
       })
    end)
    describe("-p --pretend --dry-run", function()

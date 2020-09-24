@@ -61,18 +61,18 @@ This is intended to be a build system first and foremost. So most features are w
  - `build`
  	- can be run from anywhere within your project, not just the root
 	- only compiles when sources have changed, similar to Make and other build tools
-	- your source directory doesn't have to be the same name as your module to compile, if you provide a `{string:string}` map to `project "modules"`, Teal will know how to search for your modules
+	- your source directory doesn't have to be the same name as your module to compile, if you provide a table of the type `record source: string; name: string end` to `project "module"`, Teal will know how to search for your internal modules
 	for example: if our project was laid out as such
 	```
 	src/
 	   | thing.tl
 	   | stuff.tl
 	```
-	and `thing.tl` had a `require("this_module.stuff")`, normal type checking wouldn't work, since by default, module searching can not be modified in such a way to accomodate this
-	and Teal wouldn't find `this_module`, but if we specify in `tlcconfig.lua`:
+	and `thing.tl` had a `require("this_module.stuff")`, normal type checking wouldn't work, since by default, module searching can not be modified in such a way to accomodate this and Teal wouldn't find `this_module`, but if we specify in `tlcconfig.lua`:
 	```lua
-	project "modules" {
-	   ["src"] = "this_module"
+	project "module" {
+	   source = "src",
+	   name = "this_module",
 	}
 	build "options" {
 	   source_dir = "src",
@@ -82,7 +82,7 @@ This is intended to be a build system first and foremost. So most features are w
 	then it builds fine and is properly type checked.
 	(Internally this is currently done with a tiny but non-harmful hack that can hopefully be implemented in upstream Teal)
  - Colored output/fun ANSI stuffs
- - A pretty okay api
+ - A pretty okay api, with filesystem utilities
  - A (subjectively) better config format
  - listing dependencies in your `tlcconfig.lua` will add the appropriate paths to find type definitions, provided you have the [teal-types](https://github.com/teal-language/teal-types) repo installed in `$XDG_CONFIG_HOME/teal`, so instead of the current `include_dir` solution:
 ```lua
@@ -100,7 +100,7 @@ project "deps" {
    "luafilesystem",
 }
 ```
- -
+the eventual plan for this is to be able to autogenerate a rockspec file as well for luarocks dependencies
 
 ## Planned Features
  - Integration with C tools, or at the very least, be able to specify C source and a C compiler when building
@@ -116,3 +116,7 @@ Coming Eventually™
 ## Contributing
 
 Contributions would be helpful, but most features that I want in this require fixes/changes in upstream `tl`, so consider helping there first.
+Some examples:
+ - The biggest one (in general, not just for this project), is to expose the types of the teal compiler.
+ 	- Furthermore, being able to load a script _with a dynamically generated, but typed_ environment, would be a huge weight off the `util` module's responsibility
+ - A way to interact with module loading so the `project "module"` feature doesn't have to be a hack

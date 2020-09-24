@@ -8,7 +8,7 @@ local M = {
    teal = {},
 }
 
--- Since we can't load custom typed stuff into a teal environment yet, use these for type checking
+-- Since we can't load custom typed stuff into a teal environment yet, use these for type checking configs and such
 function M.typechecker(typename: string): function(any): any
    return function(x: any): any
       if type(x) ~= typename then
@@ -24,6 +24,18 @@ function M.array_typechecker(typename: string): function({any}): {any}
       end
       for i, v in ipairs(x) do
          if type(v) ~= typename then
+            return nil
+         end
+      end
+      return x
+   end
+end
+function M.map_typechecker(key_typename: string, value_typename: string): function(table): table
+   return function(x: table): table
+      if type(x) ~= "table" then return nil end
+      for k, v in pairs(x) do
+         if type(k) ~= key_typename
+            or type(v) ~= value_typename then
             return nil
          end
       end
@@ -104,11 +116,13 @@ local function call_hook(name: string, func: function): function
    end
 end
 
-function M.create_setters(callbacks: {string:function}, options: {string:any}): function(string): function
+local function f(): function return f end
+function M.create_setters(callbacks: {string:function}, options: {string:any}, err_handler: function): function(string): function
    return function(opt_name: string): function
       if not callbacks[opt_name] then
-         -- TODO: throw an error? emit a warning?
-         return function() end
+         -- TODO: throw an error? emit a warning? allow a pluggable error handler?
+         err_handler(opt_name)
+         return f
       end
       return function(...: any)
          options[opt_name] = callbacks[opt_name](...)
@@ -309,7 +323,6 @@ local function make_hijacked_search_module(require_prefix: string, actual_name: 
       local tried: {string} = {}
 
       local altered_module_name = module_name:gsub("^" .. require_prefix, actual_name)
-      altered_module_name = altered_module_name:gsub("%.", "/") -- FIXME: put path separator in a more common place to util and fs can use it
       log.queue("debug", [[Attempting to load module with modified name
       expected prefix:  %s
    replacement prefix:  %s
