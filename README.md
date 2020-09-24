@@ -14,15 +14,22 @@ You can add your own commands to the cli by putting a .lua file that returns a s
  - Teal itself (along with its dependencies)
  - that's it (currently)
 
-# Usage
+# Installation
 
-No luarocks installation (yet), so currently this must be done manually.
+## Luarocks
+```
+luarocks install --server=https://luarocks.org/dev teal-cli
+```
+
+## Manual
 
 1. clone this repo
 2. navigate to the root directory and run `tl build` to compile (and run `busted` if you'd like to run the test suite)
 3. add the `build` directory to your lua path, or copy it somewhere in your lua path
 4. add the `bin` directory of this repo to your path, or copy the executable somewhere in your path
 5. To see if it works, try running `tlc build` in the repo, it should build the project into a `tmp` dir it creates
+
+# Usage
 
 ## Current Commands
 Currently the same as upstream `tl`.
@@ -114,6 +121,8 @@ the eventual plan for this is to be able to autogenerate a rockspec file as well
 Coming Eventually™
 
 ## Contributing
+
+Contributing **requires** the dev version of `tl` itself. So make sure that's what you have before contributing. I try not to commit versions of `teal-cli` that can't build themselves, so if it can't, that could be a sign that you have an older version of `tl`.
 
 Contributions would be helpful, but most features that I want in this require fixes/changes in upstream `tl`, so consider helping there first.
 Some examples:
