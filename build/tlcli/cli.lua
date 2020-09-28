@@ -53,7 +53,6 @@ local function prep()
       cmd.argparse(par:command(cmd.name, cmd.description))
       loader.loaded_commands[cmd.name] = cmd
    end
-
    local user_commands, user_cmd_err = loader.load_user_commands()
    if user_cmd_err then
       log.error("Error loading user commands:\n%s", user_cmd_err)
@@ -70,7 +69,7 @@ local function prep()
    end
    if not args.command then
       log.normal(par:get_usage())
-      os.exit(0)
+      os.exit(1)
    end
    if args.debug then
       log.enable("debug")
@@ -79,6 +78,7 @@ local function prep()
       log.disable("normal")
       log.disable("verbose")
    end
+
    loader.load_config()
    local options = loader.load_options()
    util.teal.set_skip_compat53(options.skip_compat53)

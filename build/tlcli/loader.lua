@@ -20,7 +20,8 @@ local function find_command_path(name)
 end
 
 local function load_command_from_path(path)
-   local chunk, err = util.teal.type_check_and_load(path)
+
+   local chunk, err = loadfile(path)
    if not chunk then
       return nil, err
    end
@@ -36,6 +37,7 @@ local function validate_command(t)
    if not typecheck(t.description, "string") then       return nil, "Command missing description: string field" end
    if not typecheck(t.command, "function") then       return nil, "Command missing command: function(Args): number field" end
    if not typecheck(t.config, "function") then       return nil, "Command missing config: function(any) field" end
+   if not typecheck(t.argparse, "function") then       return nil, "Command missing argparse: function(ArgparseParser.Command) field" end
    return true
 end
 
@@ -65,7 +67,7 @@ function M.load_user_commands()
       end
    end)
    if not ok then
-      log.warn("Error loading user commands: ", err)
+      table.insert(errors, err)
    end
    return commands, #errors > 0 and table.concat(errors, "\n") or nil
 end
