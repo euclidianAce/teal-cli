@@ -131,7 +131,7 @@ function fs.path_parents(pathname: string): function(): string
 end
 
 local function dir_iter(dirname: string)
-   for file in lfs.dir(dirname) do
+   for file in assert(lfs.dir(dirname)) do
       if dirname == "." then
          dirname = ""
       end

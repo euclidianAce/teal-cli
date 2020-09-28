@@ -1,3 +1,4 @@
+
 local M = {
    bright = {},
    dark = {},

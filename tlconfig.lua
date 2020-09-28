@@ -1,4 +1,4 @@
-local types_dir = os.getenv"HOME" .. "/dev/teal-types/types/"
+local types_dir = os.getenv"XDG_CONFIG_HOME" .. "/teal/teal-types/types/"
 return {
    include_dir = {
       types_dir .. "inspect",

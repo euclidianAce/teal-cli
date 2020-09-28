@@ -44,23 +44,28 @@ function M.load_user_commands(): {Command}, string
    local ret = true
    local errors: {string} = {}
    local commands: {Command} = {}
-   for fname in fs.dir(fs.CMD_PATH()) do
-      if not loaded_files[fname] then
-         local res, err = load_command_from_path(fname)
-         if err then
-            ret = false
-            table.insert(errors, err)
-         else
-            local is_valid, reason = validate_command(res as table)
-            if not is_valid then
+   local ok, err = pcall(function()
+      for fname in fs.dir(fs.CMD_PATH()) do
+         if not loaded_files[fname] then
+            local res, err = load_command_from_path(fname)
+            if err then
                ret = false
-               table.insert(errors, reason)
+               table.insert(errors, err)
             else
-               loaded_files[fname] = true
-               table.insert(commands, res)
+               local is_valid, reason = validate_command(res as table)
+               if not is_valid then
+                  ret = false
+                  table.insert(errors, reason)
+               else
+                  loaded_files[fname] = true
+                  table.insert(commands, res)
+               end
             end
          end
       end
+   end) as (boolean, string)
+   if not ok then
+      log.warn("Error loading user commands: ", err)
    end
    return commands, #errors > 0 and table.concat(errors, "\n") or nil
 end
@@ -147,7 +152,8 @@ function M.load_config(): boolean, string
    return loaded_config[root]
 end
 
-function M.load_options(): table
+function M.load_options(): {string:any}
+   M.load_config()
    return opts
 end
 
