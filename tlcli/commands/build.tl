@@ -40,6 +40,8 @@ local build: Command = {
    argparse = function(cmd: ArgparseParser.Command)
       cmd:option("-p --pretend --dry-run", "Don't write to any files, type check and print what would be written to.")
          :args(0)
+      cmd:option("-u --update-all", "Compile each source file as if it has been edited")
+         :args(0)
    end,
 
    command = function(args: Args): number
@@ -121,6 +123,9 @@ local build: Command = {
       end
 
       local function is_source_newer(source_path: string, target_path: string): boolean
+         if args.update_all then
+            return true
+         end
          local src_mod_time = lfs.attributes(source_path, "modification")
          local target_mod_time = lfs.attributes(target_path, "modification")
          if not target_mod_time then
@@ -227,8 +232,8 @@ local build: Command = {
       local write_step = util.wrap_with(step, threads.writers)
 
       io.stdout:write("\n")
-      while next(threads.checkers)
-         or next(threads.writers)
+      while (next(threads.checkers)
+         or next(threads.writers))
          and not should_break()
       do
          check_step()
