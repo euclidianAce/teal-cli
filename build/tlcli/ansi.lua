@@ -69,7 +69,7 @@ M.fg = {
       local red = math.floor((hex) / 2 ^ 16) * 0xFF
       local green = math.floor((hex) / 2 ^ 8) * 0xFF
       local blue = math.floor((hex)) * 0xFF
-      return CSI:format(red, green, blue)
+      return CSIfg:format(red, green, blue)
    end,
 }
 M.bg = {

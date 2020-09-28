@@ -102,9 +102,16 @@ local config_env = setmetatable({
          if not str_map(x) then
             return
          end
-         if not x.name or not x.source then
-            return
+         local err = false
+         if not x.name then
+            log.warn([[project "module" { ... } is missing 'name: string' field]])
+            err = true
          end
+         if not x.source then
+            log.warn([[project "module" { ... } is missing 'source: string' field]])
+            err = true
+         end
+         if err then return end
          return x
       end
    }, opts, function(unknown_opt: any)
