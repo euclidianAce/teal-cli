@@ -120,7 +120,6 @@ local function f(): function return f end
 function M.create_setters(callbacks: {string:function}, options: {string:any}, err_handler: function): function(string): function
    return function(opt_name: string): function
       if not callbacks[opt_name] then
-         -- TODO: throw an error? emit a warning? allow a pluggable error handler?
          err_handler(opt_name)
          return f
       end
@@ -217,7 +216,6 @@ local function teal_setup_env(lax: boolean): table
 end
 
 function M.teal.set_skip_compat53(b: boolean)
-   log.debug("Setting compat53 to %s", tostring(b))
    skip_compat53 = b
 end
 

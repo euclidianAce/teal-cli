@@ -134,4 +134,5 @@ Contributions would be helpful, but most features that I want in this require fi
 Some examples:
  - The biggest one (in general, not just for this project), is to expose the types of the teal compiler.
  	- Furthermore, being able to load a script _with a dynamically generated, but typed_ environment, would be a huge weight off the `util` module's responsibility
+ - Additionally, the teal-types repo could use some love.
  - A way to interact with module loading so the `project "module"` feature doesn't have to be a hack

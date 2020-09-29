@@ -120,7 +120,6 @@ local function f()    return f end
 function M.create_setters(callbacks, options, err_handler)
    return function(opt_name)
       if not callbacks[opt_name] then
-
          err_handler(opt_name)
          return f
       end
@@ -217,7 +216,6 @@ local function teal_setup_env(lax)
 end
 
 function M.teal.set_skip_compat53(b)
-   log.debug("Setting compat53 to %s", tostring(b))
    skip_compat53 = b
 end
 

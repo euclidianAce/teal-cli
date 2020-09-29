@@ -97,8 +97,14 @@ end
 return function()
    local args = prep()
    tl.loader()
-   local exit = loader.loaded_commands[args.command].command(args)
-   log.flush()
+   local ok, exit = pcall(loader.loaded_commands[args.command].command, args)
+   if not ok then
+      log.error("Command errored out: %s", exit)
+   end
    util.check_hooks()
+   log.flush()
+   if not ok then
+      os.exit(1)
+   end
    os.exit(exit)
 end
