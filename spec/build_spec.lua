@@ -78,8 +78,18 @@ describe("#build #command", function()
          command = "build",
          pipe_result = util.exit_error,
          generated = {},
-         -- TODO: just check the error message
          output_match = "is not relative\n$",
+      })
+   end)
+   it("should error out when source_dir doesn't exist", function()
+      proj(finally, {
+         dir = {
+            ["tlcconfig.lua"] = [[build "options" { source_dir = "a/directory/that/doesn't/exist" }]],
+         },
+         command = "build",
+         pipe_result = util.exit_error,
+         generated = {},
+         output_match = "Unable to access source dir \"a/directory/that/doesn't/exist\"\n.*No such file or directory",
       })
    end)
    describe("-p --pretend --dry-run", function()

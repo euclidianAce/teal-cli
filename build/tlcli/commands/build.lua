@@ -58,6 +58,14 @@ local build = {
       local src_dir = options.source_dir
       local build_dir = options.build_dir
 
+      do
+         local attrs, reason = lfs.attributes(src_dir)
+         if not attrs then
+            log.error("Unable to access source dir \"%s\"\nReason: %s", src_dir, reason)
+            return 1
+         end
+      end
+
       if global_options.module then
          log.debug("[build command] hijacking module searching...")
          local mod = global_options.module
