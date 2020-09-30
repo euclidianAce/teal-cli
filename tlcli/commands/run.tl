@@ -58,7 +58,10 @@ local run: Command = {
       table.remove(script_args, 1)
 
       tl.loader()
-      local ok = pcall(chunk, table.unpack(script_args))
+      local ok, res = pcall(chunk, table.unpack(script_args))
+      if not ok then
+         log.error("Error in script %s:\n%s", fname, res as string)
+      end
       return ok and 0 or 1
    end,
 }

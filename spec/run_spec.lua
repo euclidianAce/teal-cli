@@ -34,4 +34,15 @@ describe("#run #command", function()
          args = {"script.tl", "a", "2", "C"},
       })
    end)
+   it("should report errors in the script", function()
+      proj(finally, {
+         dir = {
+            ["script.tl"] = [[error("This is an error!")]],
+         },
+         output_match = "This is an error!",
+         command = "run",
+         args = {"script.tl"},
+         pipe_result = util.exit_error,
+      })
+   end)
 end)
