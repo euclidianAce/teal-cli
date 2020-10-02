@@ -21,6 +21,8 @@ local options = util.protected_proxy({
    exclude = {},
    source_dir = ".",
    build_dir = ".",
+   object_dir = ".",
+   module_name = "",
 })
 
 local flags = util.protected_proxy({
@@ -50,6 +52,7 @@ local build = {
       lfs.chdir(fs.find_project_root())
       local src_dir = options.source_dir
       local build_dir = options.build_dir
+      local obj_dir = options.object_dir
 
       do
          local attrs, reason = lfs.attributes(src_dir)
@@ -105,6 +108,13 @@ fs.is_absolute(build_dir),
          return 1
       end
 
+      if util.error_if(
+fs.is_absolute(obj_dir),
+"Object directory (" .. ansi.bright.yellow(obj_dir) .. ") is not relative") then
+
+         return 1
+      end
+
       local p = io.popen("stty size")
       local columns = math.floor(tonumber(p:read("*a"):match("%d+ (%d+)")) / 2.5)
       p:close()
@@ -137,6 +147,13 @@ fs.is_absolute(build_dir),
 
       local scheduler = task.scheduler(flags.keep_going and "round-robin" or "staged")
 
+      local function get_o(input)
+         return input:sub(1, -2) .. "o"
+      end
+
+      local o_files = {}
+
+      local update_so = false
       local exit = 0
       local total_steps = 0
       local fatal_err
@@ -145,7 +162,8 @@ src_dir,
 options.include,
 options.exclude) do
 
-         if input_file:match("%.tl$") and not input_file:match("%.d%.tl$") then
+         if fs.get_extension(input_file) == "tl" and not input_file:match("%.d%.tl$") then
+
             local output_file = input_file
 
             if src_dir ~= "." then
@@ -165,7 +183,6 @@ options.exclude) do
             if is_source_newer(input_file, output_file) then
                scheduler.schedule_wrap(function()
                   draw_progress("Type checking", disp_file)
-                  b:step()
 
                   local res, err = util.teal.process(input_file, true)
                   if err then
@@ -175,13 +192,14 @@ options.exclude) do
                      end
                      log.error(err)
                      if not flags.keep_going then
+                        exit = 1
                         fatal_err = err
                      end
                   end
 
+                  b:step()
                   coroutine.yield()
 
-                  b:step()
                   if not args["pretend"] then
                      local fh = assert(io.open(output_file, "w"))
                      draw_progress("Writing", disp_output_file)
@@ -191,21 +209,69 @@ options.exclude) do
                   else
                      log.normal("Would write %s", disp_output_file)
                   end
+                  b:step()
                end)
                total_steps = total_steps + 2
             end
+
+         elseif fs.get_extension(input_file) == "c" then
+            if options.module_name == "" then
+               log.error("Build error: c files are present in project, but a module name wasn't specified")
+               return 1
+            end
+
+            local output_file = get_o(input_file)
+
+            assert(check_parents(output_file))
+
+            if src_dir ~= "." then
+               output_file = output_file:sub(#src_dir + 2, -1)
+            end
+            if obj_dir ~= "." then
+               output_file = fs.path_concat(obj_dir, output_file)
+            end
+
+            if is_source_newer(input_file, output_file) then
+               check_parents(output_file)
+               update_so = true
+               scheduler.schedule_wrap(function()
+                  draw_progress("Compiling", input_file)
+                  b:step()
+                  local p = io.popen("cc -c " .. input_file .. " -o " .. output_file)
+                  p:read("*a")
+                  p:close()
+                  log.normal("Compiled %s -> %s", ansi.bright.yellow(input_file), ansi.bright.green(output_file))
+               end)
+               total_steps = total_steps + 1
+            end
+            table.insert(o_files, output_file)
          end
       end
-      b:set_total_steps(total_steps)
 
       if total_steps == 0 then
          log.normal("Nothing to build...")
          return 0
       end
 
+      b:set_total_steps(total_steps)
+
       io.write("\n")
-      while not fatal_err and b.steps < b.total_steps do
-         scheduler.step()
+      scheduler.run()
+
+      if not fatal_err and (update_so or args.update_all) and #o_files > 0 then
+         local output_file = options.module_name
+         if src_dir ~= "." then
+            output_file = output_file:sub(#src_dir + 2, -1)
+         end
+         if build_dir ~= "." then
+            output_file = fs.path_concat(build_dir, output_file)
+         end
+         check_parents(output_file)
+         draw_progress("Compiling", ansi.bright.yellow(output_file))
+         local p = io.popen("cc -fPIC -shared -o " .. output_file .. " " .. table.concat(o_files, " "))
+         p:read("*a")
+         p:close()
+         log.normal("Compiled Module %s", ansi.bright.green(output_file))
       end
 
       ansi.cursor.up(1)

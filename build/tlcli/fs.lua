@@ -263,7 +263,7 @@ function fs.add_to_path(dirname)
    package.cpath = lib_path_str .. package.cpath
 end
 
-local function get_extension(filename)
+function fs.get_extension(filename)
    local basename, extension = string.match(filename, "(.*)%.([a-z]+)$")
    extension = extension and extension:lower()
    return extension
@@ -272,7 +272,7 @@ end
 function fs.get_output_file_name(filename)
    local comps = fs.get_path_components(filename)
    local local_filename = comps[#comps]
-   local ext = get_extension(local_filename)
+   local ext = fs.get_extension(local_filename)
    if ext == "lua" then
       return local_filename:sub(1, -4) .. "out.lua"
    elseif ext == "tl" then
@@ -282,7 +282,7 @@ end
 
 function fs.get_output_file_name_components(filename)
    local comps = fs.get_path_components(filename)
-   local ext = get_extension(comps[#comps])
+   local ext = fs.get_extension(comps[#comps])
    if ext == "lua" then
       comps[#comps] = comps[#comps]:sub(1, -4) .. "out.lua"
    elseif ext == "tl" then
