@@ -211,30 +211,31 @@ local build: Command = {
 
                   local res, err = util.teal.process(input_file, true)
                   if err then
+                     exit = 1
                      local start, finish = err:lower():find("^%s*error:?%s*")
                      if finish then
                         err = err:sub(finish+1, -1)
                      end
                      log.error(err)
                      if not flags.keep_going then
-                        exit = 1
                         fatal_err = err
                      end
                   end
 
                   b:step()
                   coroutine.yield()
-
-                  if not args["pretend"] then
-                     local fh = assert(io.open(output_file, "w"))
-                     draw_progress("Writing", disp_output_file)
-                     local ok = fh:write(util.teal.pretty_print_ast(res.ast as table))
-                     assert(fh:close())
-                     log.normal("Wrote %s", disp_output_file)
-                  else
-                     log.normal("Would write %s", disp_output_file)
+                  if not err then
+                     if not args["pretend"] then
+                        local fh = assert(io.open(output_file, "w"))
+                        draw_progress("Writing", disp_output_file)
+                        local ok = fh:write(util.teal.pretty_print_ast(res.ast as table))
+                        assert(fh:close())
+                        log.normal("Wrote %s", disp_output_file)
+                     else
+                        log.normal("Would write %s", disp_output_file)
+                     end
+                     b:step()
                   end
-                  b:step()
                end)
                total_steps = total_steps + 2
             end
