@@ -142,5 +142,62 @@ describe("#build #command", function()
             generated = {},
          })
       end)
+      it("shouldn't compile a module if .c file has an error", function()
+         proj(finally, {
+            dir = {
+               "b.c",
+               ["a.c"] = "#error hi",
+               ["tlcconfig.lua"] = [[
+                  build "cmodule" {
+                     name = "my_module",
+                     include = {
+                        "a.c",
+                        "b.c",
+                     }
+                  }
+                  build "flags" { "keep_going" }
+               ]],
+            },
+            command = "build",
+            pipe_result = util.exit_error,
+            args = {},
+            generated = { "b.o" },
+         })
+      end)
+      it("should compile multiple C modules", function()
+         proj(finally, {
+            dir = {
+               "a.c",
+               "b.c",
+               "c.c",
+               ["tlcconfig.lua"] = [[
+                  build "cmodule" {
+                     name = "a",
+                     include = { "a.c" }
+                  }
+                  build "cmodule" {
+                     name = "b",
+                     include = { "b.c" }
+                  }
+                  build "cmodule" {
+                     name = "c",
+                     include = { "c.c" }
+                  }
+                  build "flags" { "keep_going" }
+               ]],
+            },
+            command = "build",
+            pipe_result = util.exit_ok,
+            args = {},
+            generated = {
+               "a.o",
+               "b.o",
+               "c.o",
+               "a.so",
+               "b.so",
+               "c.so",
+            },
+         })
+      end)
    end)
 end)
