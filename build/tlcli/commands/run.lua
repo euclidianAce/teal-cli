@@ -2,6 +2,7 @@
 local argparse = require("argparse")
 local tl = require("tl")
 
+local ansi = require("tlcli.ansi")
 local log = require("tlcli.log")
 local util = require("tlcli.util")
 
@@ -21,7 +22,7 @@ local run = {
       local fname = script_args[1]
       local chunk, err = util.teal.type_check_and_load(fname)
       if not chunk then
-         log.error("Error loading %s: %s", fname, err)
+         log.error("Error loading %s: %s", ansi.bright.yellow(fname), err)
          return 1
       end
 
@@ -60,7 +61,7 @@ local run = {
       tl.loader()
       local ok, res = pcall(chunk, table.unpack(script_args))
       if not ok then
-         log.error("Error in script %s:\n%s", fname, res)
+         log.error("Error in script %s:\n%s", ansi.bright.yellow(fname), res)
       end
       return ok and 0 or 1
    end,

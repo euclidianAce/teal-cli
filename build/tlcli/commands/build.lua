@@ -150,55 +150,57 @@ src_dir,
 options.include,
 options.exclude) do
 
-         local output_file = input_file
+         if input_file:match("%.tl$") and not input_file:match("%.d%.tl$") then
+            local output_file = input_file
 
-         if src_dir ~= "." then
-            output_file = output_file:sub(#src_dir + 2, -1)
-         end
-         if build_dir ~= "." then
-            output_file = fs.path_concat(build_dir, output_file)
-         end
+            if src_dir ~= "." then
+               output_file = output_file:sub(#src_dir + 2, -1)
+            end
+            if build_dir ~= "." then
+               output_file = fs.path_concat(build_dir, output_file)
+            end
 
-         output_file = output_file:sub(1, -3) .. "lua"
+            output_file = output_file:sub(1, -3) .. "lua"
 
-         assert(check_parents(output_file))
+            assert(check_parents(output_file))
 
-         local disp_file = ansi.bright.yellow(input_file)
-         local disp_output_file = ansi.bright.yellow(output_file)
+            local disp_file = ansi.bright.yellow(input_file)
+            local disp_output_file = ansi.bright.yellow(output_file)
 
-         if is_source_newer(input_file, output_file) then
-            create_checker(function()
-               draw_progress("Type checking", disp_file)
-               b:add_progress(step_size)
-
-               local res, err = util.teal.process(input_file, true)
-               if err then
-                  local start, finish = err:lower():find("^%s*error:?%s*")
-                  if finish then
-                     err = err:sub(finish + 1, -1)
-                  end
-               end
-
-               coroutine.yield(err)
-               if not args["pretend"] then
-                  create_writer(function()
-                     local fh = assert(io.open(output_file, "w"))
-
-                     draw_progress("Writing", disp_output_file)
-
-                     local ok = fh:write(util.teal.pretty_print_ast(res.ast))
-
-                     b:add_progress(step_size)
-
-                     assert(fh:close())
-                     log.normal("Wrote %s", disp_output_file)
-                  end)
-               else
+            if is_source_newer(input_file, output_file) then
+               create_checker(function()
+                  draw_progress("Type checking", disp_file)
                   b:add_progress(step_size)
-                  log.normal("Would write %s", disp_output_file)
-               end
-            end)
-            total_steps = total_steps + 2
+
+                  local res, err = util.teal.process(input_file, true)
+                  if err then
+                     local start, finish = err:lower():find("^%s*error:?%s*")
+                     if finish then
+                        err = err:sub(finish + 1, -1)
+                     end
+                  end
+
+                  coroutine.yield(err)
+                  if not args["pretend"] then
+                     create_writer(function()
+                        local fh = assert(io.open(output_file, "w"))
+
+                        draw_progress("Writing", disp_output_file)
+
+                        local ok = fh:write(util.teal.pretty_print_ast(res.ast))
+
+                        b:add_progress(step_size)
+
+                        assert(fh:close())
+                        log.normal("Wrote %s", disp_output_file)
+                     end)
+                  else
+                     b:add_progress(step_size)
+                     log.normal("Would write %s", disp_output_file)
+                  end
+               end)
+               total_steps = total_steps + 2
+            end
          end
       end
 
