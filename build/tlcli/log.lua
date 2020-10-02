@@ -83,6 +83,7 @@ function M.get_stream(level)    return streams[level] end
 
 
 function M.normal(fmt, ...)    M.log("normal", fmt, ...) end
+function M.verbose(fmt, ...)    M.log("verbose", fmt, ...) end
 function M.warn(fmt, ...)    M.log("warn", fmt, ...) end
 function M.error(fmt, ...)    M.log("error", fmt, ...) end
 function M.debug(fmt, ...)    M.log("debug", fmt, ...) end

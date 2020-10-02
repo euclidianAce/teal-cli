@@ -26,6 +26,7 @@ local function prep(): Args
    par:flag("--skip-compat53", "Skip compat53 insertions.")
    par:flag("--version", "Print version and exit")
    par:flag("-q --quiet", "Do not print information messages to stdout. Errors may still be printed to stderr.")
+   par:flag("-v --verbose", "Enable verbose logging")
    par:flag("-d --debug", "Enable debug logging.")
 
    -- This will probably be moved to the build command and maybe gen
@@ -73,6 +74,9 @@ local function prep(): Args
    end
    if args.debug then
       log.enable("debug")
+   end
+   if args.verbose then
+      log.enable("verbose")
    end
    if args.quiet then
       log.disable("normal")

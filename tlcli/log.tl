@@ -82,10 +82,11 @@ function M.set_stream(level: string, fh: FILE) streams[level] = fh end
 function M.get_stream(level: string): FILE return streams[level] end
 
 -- FIXME when teal knows about metatables
-function M.normal(fmt: string, ...: any) M.log("normal", fmt, ...) end
-function M.warn(fmt: string, ...: any)   M.log("warn",   fmt, ...) end
-function M.error(fmt: string, ...: any)  M.log("error",  fmt, ...) end
-function M.debug(fmt: string, ...: any)  M.log("debug",  fmt, ...) end
+function M.normal(fmt: string, ...: any)   M.log("normal", fmt, ...) end
+function M.verbose(fmt: string, ...: any)  M.log("verbose", fmt, ...) end
+function M.warn(fmt: string, ...: any)     M.log("warn",   fmt, ...) end
+function M.error(fmt: string, ...: any)    M.log("error",  fmt, ...) end
+function M.debug(fmt: string, ...: any)    M.log("debug",  fmt, ...) end
 
 --setmetatable(M, {
 --__index = function(_: table, key: string): function(string, ...: any)

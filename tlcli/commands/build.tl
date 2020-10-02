@@ -134,17 +134,23 @@ local build: Command = {
       end
 
       local function is_source_newer(source_path: string, target_path: string): boolean
+         local retval = false
          if args.update_all then
             return true
          end
          local src_mod_time = lfs.attributes(source_path, "modification")
          local target_mod_time = lfs.attributes(target_path, "modification")
          if not target_mod_time then
-            return true
+            retval =  true
          end
-         return src_mod_time > target_mod_time
+         retval = retval or src_mod_time > target_mod_time
+         if retval then
+            log.verbose("Source file %s is newer than %s, recompiling...", ansi.bright.yellow(source_path), ansi.bright.yellow(target_path))
+         end
+         return retval
       end
 
+      -- staged will make everything get type checked first, round-robin just lets stuff happen
       local scheduler = task.scheduler(flags.keep_going and "round-robin" or "staged")
 
       local function get_o(input: string): string
@@ -235,12 +241,22 @@ local build: Command = {
                check_parents(output_file)
                update_so = true
                scheduler.schedule_wrap(function()
+                  -- forcibly move these up a couple stages
+                  coroutine.yield()
+                  coroutine.yield()
                   draw_progress("Compiling", input_file)
-                  b:step()
-                  local p <const> = io.popen("cc -c " .. input_file .. " -o " .. output_file)
-                  p:read("*a")
-                  p:close()
-                  log.normal("Compiled %s -> %s", ansi.bright.yellow(input_file), ansi.bright.green(output_file))
+                  local cmd = "cc -c " .. input_file .. " -o " .. output_file .. " 2>&1"
+                  local p <const> = io.popen(cmd)
+                  local output <const> = p:read("*a")
+                  local exit_ok = p:close()
+                  if not exit_ok then
+                     log.error("Error compiling %s:\nCommand run: %s\n\n%s", ansi.bright.yellow(input_file), cmd, output)
+                     exit = 1
+                     fatal_err = output
+                  else
+                     log.normal("Compiled %s -> %s", ansi.bright.yellow(input_file), ansi.bright.green(output_file))
+                     b:step()
+                  end
                end)
                total_steps = total_steps + 1
             end
@@ -268,10 +284,16 @@ local build: Command = {
          end
          check_parents(output_file)
          draw_progress("Compiling", ansi.bright.yellow(output_file))
-         local p <const> = io.popen("cc -fPIC -shared -o " .. output_file .. " " .. table.concat(o_files, " "))
-         p:read("*a")
-         p:close()
-         log.normal("Compiled Module %s", ansi.bright.green(output_file))
+         local cmd <const> = "cc -fPIC -shared -o " .. output_file .. " " .. table.concat(o_files, " ")
+         local p <const> = io.popen(cmd)
+         local output <const> = p:read("*a")
+         local exit_ok <const> = p:close()
+         if not exit_ok then
+            log.error("Error compiling module %s:\nCommand run: %s\n\n%s", ansi.bright.green(output_file), cmd, output)
+            exit = 1
+         else
+            log.normal("Compiled Module %s", ansi.bright.green(output_file))
+         end
       end
 
       ansi.cursor.up(1)
