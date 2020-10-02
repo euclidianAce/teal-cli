@@ -5,23 +5,43 @@ local record Bar
    fill: string
    empty: string
    head: string
-   progress: number -- \in [0, 1]
    length: number
    show_progress: boolean
    message: string
    message_length: number
+   steps: number
+   total_steps: number
 end
 local bar_mt = {
    __index = Bar,
    -- __name = "tlcli.ui.bar"
 }
 
+function Bar:step()
+   if self.steps < self.total_steps then
+      self.steps = self.steps + 1
+   end
+end
+
+function Bar:set_total_steps(n: number)
+   assert(n > 0, "expected positive number")
+   self.total_steps = math.ceil(n)
+end
+
+function Bar:get_progress(): number
+   return self.steps / self.total_steps
+end
+
+function Bar:set_message(s: string)
+   self.message = s
+end
+
 function Bar:draw(stream: FILE)
    stream = stream or io.stdout
-   local filled_space = math.floor(self.progress * self.length)
+   local filled_space = math.floor(self:get_progress() * self.length)
 
    if self.show_progress then
-      stream:write(string.format(" %3d %% ", math.floor(self.progress * 100)))
+      stream:write(string.format(" %3d %% ", math.floor(self:get_progress() * 100)))
    end
    if self.message then
       stream:write(" ")
@@ -41,27 +61,6 @@ function Bar:draw(stream: FILE)
    stream:flush()
 end
 
-local function clamp(n: number): number
-   if n > 1 then return 1 end
-   if n < 0 then return 0 end
-   return n
-end
-
-function Bar:set_progress(p: number)
-   self.progress = clamp(p)
-end
-
-function Bar:get_progress(): number
-   return self.progress
-end
-
-function Bar:add_progress(p: number)
-   self.progress = clamp(self.progress + p)
-end
-
-function Bar:set_message(s: string)
-   self.message = s
-end
 
 local defaults: {string:number|string|boolean} = {
    left = "[",
@@ -69,7 +68,6 @@ local defaults: {string:number|string|boolean} = {
    head = ">",
    empty = " ",
    right = "]",
-   progress = 0,
    length = 10,
    message_length = 10,
    show_progress = false,
@@ -78,7 +76,9 @@ local defaults: {string:number|string|boolean} = {
 return {
    new = function(settings: {string:number|string|boolean}): Bar
       settings = settings or {}
-      local new_bar: {string:any} = {}
+      local new_bar: {string:any} = {
+         steps = 0
+      }
       for key, default_value in pairs(defaults) do
          if settings[key] == nil then
             new_bar[key] = default_value

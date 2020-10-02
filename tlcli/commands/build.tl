@@ -9,6 +9,7 @@ local log = require("tlcli.log")
 local util = require("tlcli.util")
 local bar = require("tlcli.ui.bar")
 local loader = require("tlcli.loader")
+local task = require("tlcli.task")
 
 local types = require("tlcli.types")
 local Args = types.Args
@@ -25,14 +26,6 @@ local options = util.protected_proxy{
 local flags: {string:boolean} = util.protected_proxy{
    keep_going = false,
 }
-
-local threads: {string:{number:thread}} = {
-   checkers = {},
-   writers = {},
-}
-
-local create_checker = function(func: function) table.insert(threads.checkers, coroutine.create(func)) end
-local create_writer  = function(func: function) table.insert(threads.writers, coroutine.create(func))  end
 
 local build: Command = {
    name = "build",
@@ -142,9 +135,11 @@ local build: Command = {
          return src_mod_time > target_mod_time
       end
 
+      local scheduler = task.scheduler(flags.keep_going and "round-robin" or "staged")
+
       local exit = 0
-      local step_size: number
       local total_steps = 0
+      local fatal_err: string
       for input_file in fs.match(
          src_dir,
          options.include,
@@ -168,9 +163,9 @@ local build: Command = {
             local disp_output_file = ansi.bright.yellow(output_file)
 
             if is_source_newer(input_file, output_file) then
-               create_checker(function()
+               scheduler.schedule_wrap(function()
                   draw_progress("Type checking", disp_file)
-                  b:add_progress(step_size)
+                  b:step()
 
                   local res, err = util.teal.process(input_file, true)
                   if err then
@@ -178,24 +173,22 @@ local build: Command = {
                      if finish then
                         err = err:sub(finish+1, -1)
                      end
+                     log.error(err)
+                     if not flags.keep_going then
+                        fatal_err = err
+                     end
                   end
 
-                  coroutine.yield(err)
+                  coroutine.yield()
+
+                  b:step()
                   if not args["pretend"] then
-                     create_writer(function()
-                        local fh = assert(io.open(output_file, "w"))
-
-                        draw_progress("Writing", disp_output_file)
-
-                        local ok = fh:write(util.teal.pretty_print_ast(res.ast as table))
-
-                        b:add_progress(step_size)
-
-                        assert(fh:close())
-                        log.normal("Wrote %s", disp_output_file)
-                     end)
+                     local fh = assert(io.open(output_file, "w"))
+                     draw_progress("Writing", disp_output_file)
+                     local ok = fh:write(util.teal.pretty_print_ast(res.ast as table))
+                     assert(fh:close())
+                     log.normal("Wrote %s", disp_output_file)
                   else
-                     b:add_progress(step_size)
                      log.normal("Would write %s", disp_output_file)
                   end
                end)
@@ -203,58 +196,16 @@ local build: Command = {
             end
          end
       end
+      b:set_total_steps(total_steps)
 
       if total_steps == 0 then
          log.normal("Nothing to build...")
          return 0
       end
 
-      step_size = 1 / total_steps
-
-      local function should_break(): boolean
-         return (not flags.keep_going and exit ~= 0)
-      end
-      local step = function(ts: {number:thread}): any
-         while true do
-            if should_break() then break end
-            for i, t in pairs(ts) do
-               if coroutine.status(t) == "dead" then
-                  ts[i] = nil
-               else
-                  local ok, err = coroutine.resume(t)
-                  if not ok or err as boolean then
-                     log.error("%s", err)
-                     ts[i] = nil
-                     exit = 1
-                     break
-                  end
-               end
-               if i % 20 == 0 then
-                  coroutine.yield()
-                  break
-               end
-            end
-            coroutine.yield()
-         end
-      end
-
-      local check_step = util.wrap_with(step, threads.checkers)
-      local write_step = util.wrap_with(step, threads.writers)
-
-      io.stdout:write("\n")
-      while (next(threads.checkers)
-         or next(threads.writers))
-         and not should_break()
-      do
-         check_step()
-         if should_break() then break end
-         if flags.keep_going as boolean
-            or not next(threads.checkers)
-            -- only write after checking everything in case of errors
-            -- or if we don't care about errors
-         then
-            write_step()
-         end
+      io.write("\n")
+      while not fatal_err and b.steps < b.total_steps do
+         scheduler.step()
       end
 
       ansi.cursor.up(1)
@@ -280,8 +231,14 @@ local build: Command = {
          end
       elseif opt == "options" then
          return function(t: {string:any})
-            for i, v in pairs(t) do
-               options as {string:any}[i] = v
+            for k, v in pairs(t) do
+               options as {string:any}[k] = v
+            end
+         end
+      elseif opt == "c" then
+         return function(t: {string:any})
+            for k, v in pairs(t) do
+               options as {string:any}[k] = v
             end
          end
       end

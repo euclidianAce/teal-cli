@@ -241,6 +241,10 @@ function M.teal.type_check_file(filename)
    return true
 end
 
+function M.teal.build_file(filename)
+
+end
+
 function M.teal.compile(filename, type_check)
    local lax = filename:match("%.lua$")
    local result = assert(tl.process(filename))
