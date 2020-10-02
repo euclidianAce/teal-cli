@@ -111,4 +111,36 @@ describe("#build #command", function()
          })
       end)
    end)
+   describe("cmodule config", function()
+      it("should compile a c module into a .so/.dll file", function()
+         proj(finally, {
+            dir = {
+               "a.c",
+               "b.c",
+               "c.c",
+               ["tlcconfig.lua"] = [[build "cmodule" {name = "my_module", include = {"a.c", "b.c", "c.c"}}]],
+            },
+            command = "build",
+            args = {},
+            generated = {
+               "a.o",
+               "b.o",
+               "c.o",
+               "my_module.so", -- TODO: tests should probably pass on windows
+            },
+         })
+      end)
+      it("should report errors in C files", function()
+         proj(finally, {
+            dir = {
+               ["a.c"] = "#error hi",
+               ["tlcconfig.lua"] = [[build "cmodule" {name = "my_module", include = {"a.c"}}]],
+            },
+            command = "build",
+            pipe_result = util.exit_error,
+            args = {},
+            generated = {},
+         })
+      end)
+   end)
 end)
