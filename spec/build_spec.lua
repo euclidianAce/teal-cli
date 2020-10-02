@@ -199,5 +199,38 @@ describe("#build #command", function()
             },
          })
       end)
+      it("should put C modules in build_dir", function()
+         proj(finally, {
+            dir = {
+               "a.c",
+               "b.c",
+               "c.c",
+               ["tlcconfig.lua"] = [[
+                  build "cmodule" {
+                     name = "my_module",
+                     include = {
+                        "a.c",
+                        "b.c",
+                        "c.c",
+                     }
+                  }
+                  build "flags" { "keep_going" }
+                  build "options" {
+                     build_dir = "build"
+                  }
+               ]],
+            },
+            generated = {
+               "a.o",
+               "b.o",
+               "c.o",
+               build = {
+                  "my_module.so"
+               },
+            },
+            command = "build",
+            pipe_result = util.exit_ok,
+         })
+      end)
    end)
 end)
