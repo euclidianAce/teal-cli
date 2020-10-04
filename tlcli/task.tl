@@ -11,7 +11,7 @@ local record SchedulerInterface
    step: function()
    run: function()
    schedule: function(thread)
-   schedule_wrap: function(function)
+   wrap: function(function)
 end
 
 local M = {
@@ -48,7 +48,7 @@ function M.scheduler(mode: SchedulerMode): SchedulerInterface
          schedule = function(t: thread)
             table.insert(pool, t)
          end,
-         schedule_wrap = default_wrap(pool),
+         wrap = default_wrap(pool),
       }
    elseif mode == "stack" then
       local stack: {thread} = {}
@@ -75,7 +75,7 @@ function M.scheduler(mode: SchedulerMode): SchedulerInterface
          schedule = function(t: thread)
             table.insert(stack, t)
          end,
-         schedule_wrap = default_wrap(stack),
+         wrap = default_wrap(stack),
       }
    elseif mode == "queue" then
       local queue: {number:thread} = {}
@@ -102,51 +102,48 @@ function M.scheduler(mode: SchedulerMode): SchedulerInterface
          schedule = function(t: thread)
             table.insert(queue, t)
          end,
-         schedule_wrap = default_wrap(queue),
+         wrap = default_wrap(queue),
       }
    elseif mode == "staged" then
       -- whenever a coroutine completes a step, it moves up a stage
       -- stages are round robined from the lowest to the highest
-      local stages: {{thread}} = {{}}
-      local all_stages_empty = function(): boolean
-         for _, stage in ipairs(stages) do
-            if #stage > 0 then
-               return false
-            end
-         end
-         return true
-      end
+      local stages: {{number:thread}} = {{}}
       scheduler = {
-         step = coroutine.wrap(function()
-            while true do
-               local i = 1
-               while i <= #stages do
-                  while #stages[i] > 0 do
-                     local t = table.remove(stages[i])
-                     local ok = coroutine.resume(t)
-                     if ok then
-                        if not stages[i+1] then
-                           stages[i+1] = {}
-                        end
-                        table.insert(stages[i+1], t)
+         step = function()
+            for i, stage in ipairs(stages) do
+               if #stage > 0 then
+                  local t <const> = table.remove(stage)
+                  local ok <const> = coroutine.resume(t)
+                  if ok then
+                     if not stages[i+1] then
+                        stages[i+1] = {}
                      end
-                     coroutine.yield()
+                     table.insert(stages[i+1], t)
                   end
-                  i = i + 1
-                  coroutine.yield()
+                  return
                end
-               coroutine.yield()
             end
-         end) as function(),
+         end,
          run = function()
-            repeat
-               scheduler.step()
-            until all_stages_empty()
+            for i, stage in ipairs(stages) do
+               for k, thread in pairs(stage) do
+                  local ok <const> = coroutine.resume(thread)
+                  stage[k] = nil
+                  if ok then
+                     if not stages[i+1] then
+                        stages[i+1] = {}
+                     end
+                     table.insert(stages[i+1], thread)
+                  end
+               end
+            end
          end,
          schedule = function(t: thread)
             table.insert(stages[1], t)
          end,
-         schedule_wrap = default_wrap(stages[1]),
+         wrap = function(f: function)
+            table.insert(stages[1], coroutine.create(f))
+         end
       }
    else
       return nil

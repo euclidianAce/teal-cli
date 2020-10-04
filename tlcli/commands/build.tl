@@ -85,7 +85,6 @@ local build: Command = {
          util.hijack_tl_search_module(mod.name, mod.source)
       end
 
-      -- check if all the parents to dirname exist, and if they don't, create them
       -- {{{ Check Parent Dirs
       local parents_that_exist: {string:boolean} = {}
       local function check_parents(dirname: string): boolean, string
@@ -206,7 +205,7 @@ local build: Command = {
             local disp_output_file = ansi.bright.yellow(output_file)
 
             if is_source_newer(input_file, output_file) then
-               scheduler.schedule_wrap(function()
+               scheduler.wrap(function()
                   draw_progress("Type checking", disp_file)
 
                   local res, err = util.teal.process(input_file, true)
@@ -268,7 +267,7 @@ local build: Command = {
                if is_source_newer(input_file, output_file) then
                   moddata.source[input_file] = true
                   check_parents(output_file)
-                  scheduler.schedule_wrap(function()
+                  scheduler.wrap(function()
                      -- forcibly move these up a couple stages
                      coroutine.yield()
                      coroutine.yield()
@@ -299,7 +298,7 @@ local build: Command = {
       for name, mod in pairs(c_modules) do
          if should_recompile_c_module(mod) then
             total_steps = total_steps + 1
-            c_mod_scheduler.schedule_wrap(function()
+            c_mod_scheduler.wrap(function()
                local output_file = name .. "." .. fs.get_shared_library_ext()
                if src_dir ~= "." then
                   output_file = output_file:sub(#src_dir + 2, -1)

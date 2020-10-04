@@ -86,7 +86,6 @@ local build = {
       end
 
 
-
       local parents_that_exist = {}
       local function check_parents(dirname)
          for parent in fs.path_parents(dirname) do
@@ -206,7 +205,7 @@ options.exclude) do
             local disp_output_file = ansi.bright.yellow(output_file)
 
             if is_source_newer(input_file, output_file) then
-               scheduler.schedule_wrap(function()
+               scheduler.wrap(function()
                   draw_progress("Type checking", disp_file)
 
                   local res, err = util.teal.process(input_file, true)
@@ -268,7 +267,7 @@ moddata.exclude or {}) do
                if is_source_newer(input_file, output_file) then
                   moddata.source[input_file] = true
                   check_parents(output_file)
-                  scheduler.schedule_wrap(function()
+                  scheduler.wrap(function()
 
                      coroutine.yield()
                      coroutine.yield()
@@ -299,7 +298,7 @@ moddata.exclude or {}) do
       for name, mod in pairs(c_modules) do
          if should_recompile_c_module(mod) then
             total_steps = total_steps + 1
-            c_mod_scheduler.schedule_wrap(function()
+            c_mod_scheduler.wrap(function()
                local output_file = name .. "." .. fs.get_shared_library_ext()
                if src_dir ~= "." then
                   output_file = output_file:sub(#src_dir + 2, -1)
