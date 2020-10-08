@@ -59,11 +59,33 @@ local run = {
       table.remove(script_args, 1)
 
       tl.loader()
-      local ok, res = pcall(chunk, table.unpack(script_args))
-      if not ok then
-         log.error("Error in script %s:\n%s", ansi.bright.yellow(fname), res)
-      end
-      return ok and 0 or 1
+      local script = coroutine.create(function()
+         chunk(table.unpack(script_args))
+      end)
+
+      local exit = 0
+      repeat
+         local ok = coroutine.resume(script)
+         if not ok then
+            exit = 1
+            local trace = debug.traceback(script)
+            local stack = util.generate(util.split(trace, "\n", true))
+
+            table.remove(stack, 1)
+            table.remove(stack)
+            table.remove(stack)
+
+            for i, v in ipairs(stack) do
+               stack[i] = v:gsub("^(%s*)(.-):(%d+)", function(ws, file, line_num)
+                  return ws .. ansi.bright.yellow(file) .. ":" .. ansi.bright.magenta(line_num)
+               end)
+            end
+
+            log.error("Error in script %s:\nTraceback:\n%s", ansi.bright.yellow(fname), table.concat(stack, "\n"))
+
+         end
+      until coroutine.status(script) == "dead"
+      return exit
    end,
 }
 

@@ -92,19 +92,19 @@ M.bg = {
 }
 
 function M.cursor.up(n: number)
-   io.write(CSI:format(tostring(n) .. "A"))
+   io.write(CSI:format(tostring(n or 1) .. "A"))
 end
 
 function M.cursor.down(n: number)
-   io.write(CSI:format(tostring(n) .. "B"))
+   io.write(CSI:format(tostring(n or 1) .. "B"))
 end
 
 function M.cursor.right(n: number)
-   io.write(CSI:format(tostring(n) .. "C"))
+   io.write(CSI:format(tostring(n or 1) .. "C"))
 end
 
 function M.cursor.left(n: number)
-   io.write(CSI:format(tostring(n) .. "D"))
+   io.write(CSI:format(tostring(n or 1) .. "D"))
 end
 
 function M.cursor.set_pos(row: number, col: number)
