@@ -94,6 +94,8 @@ function fs.path_concat(...: string|{string}): string
    return table.concat(path, path_separator)
 end
 
+-- TODO: is this the best way to do this?
+-- (probably not)
 local HOME <const> = os.getenv("HOME")
 local XDG_CONFIG_HOME <const> = os.getenv("XDG_CONFIG_HOME")
    or fs.path_concat(HOME, ".config")

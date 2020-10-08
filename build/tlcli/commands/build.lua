@@ -222,19 +222,18 @@ options.exclude) do
                   end
 
                   b:step()
+                  if err then                      return end
                   coroutine.yield()
-                  if not err then
-                     if not args["pretend"] then
-                        local fh = assert(io.open(output_file, "w"))
-                        draw_progress("Writing", disp_output_file)
-                        local ok = fh:write(util.teal.pretty_print_ast(res.ast))
-                        assert(fh:close())
-                        log.normal("Wrote %s", disp_output_file)
-                     else
-                        log.normal("Would write %s", disp_output_file)
-                     end
-                     b:step()
+                  if not args["pretend"] then
+                     local fh = assert(io.open(output_file, "w"))
+                     draw_progress("Writing", disp_output_file)
+                     local ok = fh:write(util.teal.pretty_print_ast(res.ast))
+                     assert(fh:close())
+                     log.normal("Wrote %s", disp_output_file)
+                  else
+                     log.normal("Would write %s", disp_output_file)
                   end
+                  b:step()
                end)
                total_steps = total_steps + 2
             end
@@ -406,14 +405,5 @@ moddata.exclude or {}) do
       end
    end,
 }
-
-
-
-
-
-
-
-
-
 
 return build

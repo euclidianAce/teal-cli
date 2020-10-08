@@ -222,19 +222,18 @@ local build: Command = {
                   end
 
                   b:step()
+                  if err then return end
                   coroutine.yield()
-                  if not err then
-                     if not args["pretend"] then
-                        local fh = assert(io.open(output_file, "w"))
-                        draw_progress("Writing", disp_output_file)
-                        local ok = fh:write(util.teal.pretty_print_ast(res.ast as table))
-                        assert(fh:close())
-                        log.normal("Wrote %s", disp_output_file)
-                     else
-                        log.normal("Would write %s", disp_output_file)
-                     end
-                     b:step()
+                  if not args["pretend"] then
+                     local fh = assert(io.open(output_file, "w"))
+                     draw_progress("Writing", disp_output_file)
+                     local ok = fh:write(util.teal.pretty_print_ast(res.ast as table))
+                     assert(fh:close())
+                     log.normal("Wrote %s", disp_output_file)
+                  else
+                     log.normal("Would write %s", disp_output_file)
                   end
+                  b:step()
                end)
                total_steps = total_steps + 2
             end
@@ -407,13 +406,4 @@ local build: Command = {
    end,
 }
 
-               -- if options.module_name == "" then
-                  -- log.error(
-                     -- "Build error: c files are present in project, but a module name wasn't specified\nSpecify one in %s by using the following:\n\n%s\n\n or ignore them with \n\n%s\n",
-                     -- ansi.bright.yellow("tlcconfig.lua"),
-                     -- "build \"options\" {\n   module_name = \"my_module\"\n}",
-                     -- "build \"options\" {\n   exclude = {\"*.c\"}\n}"
-                  -- )
-                  -- return 1
-               -- end
 return build

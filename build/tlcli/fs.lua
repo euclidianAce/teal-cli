@@ -94,6 +94,8 @@ function fs.path_concat(...)
    return table.concat(path, path_separator)
 end
 
+
+
 local HOME = os.getenv("HOME")
 local XDG_CONFIG_HOME = os.getenv("XDG_CONFIG_HOME") or
 fs.path_concat(HOME, ".config")
