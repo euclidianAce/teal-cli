@@ -77,6 +77,7 @@ local function prep(): Args
       log.debug("Debug output enabled")
    end
    if args.verbose then
+      log.debug("Verbose output enabled")
       log.enable("verbose")
    end
    if args.quiet then

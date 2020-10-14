@@ -265,20 +265,30 @@ function fs.add_to_path(dirname)
    package.cpath = lib_path_str .. package.cpath
 end
 
-function fs.get_extension(filename)
+function fs.split_extension(filename)
    local basename, extension = string.match(filename, "(.*)%.([a-z]+)$")
    extension = extension and extension:lower()
+   return basename, extension
+end
+
+function fs.get_extension(filename)
+   local _, extension = fs.split_extension(filename)
    return extension
 end
 
+function fs.get_basename(filename)
+   local basename = fs.split_extension(filename)
+   return basename
+end
+
 function fs.get_output_file_name(filename)
-   local comps = fs.get_path_components(filename)
-   local local_filename = comps[#comps]
-   local ext = fs.get_extension(local_filename)
+   local ext = fs.get_extension(filename)
    if ext == "lua" then
-      return local_filename:sub(1, -4) .. "out.lua"
+      return filename:sub(1, -4) .. "out.lua"
    elseif ext == "tl" then
-      return local_filename:sub(1, -3) .. "lua"
+      return filename:sub(1, -3) .. "lua"
+   elseif ext == "c" then
+      return filename:sub(1, -2) .. "o"
    end
 end
 
@@ -342,6 +352,18 @@ function fs.find_project_root()
    end
    lfs.chdir(orig_dir)
    return root_dir or orig_dir
+end
+
+local file_content_cache = setmetatable({}, { __mode = "kv" })
+function fs.read(filename)
+   if file_content_cache[filename] then
+      return file_content_cache[filename]
+   end
+   local fh, err = io.open(filename, "r")
+   if not fh then       return nil, err end
+   file_content_cache[filename] = fh:read("*a")
+   fh:close()
+   return file_content_cache[filename]
 end
 
 return fs

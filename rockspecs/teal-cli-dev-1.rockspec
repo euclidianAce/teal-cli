@@ -15,6 +15,7 @@ dependencies = {
    "argparse",
    "luafilesystem",
    "tl",
+   "ltreesitter",
 }
 build = {
    type = "builtin",
