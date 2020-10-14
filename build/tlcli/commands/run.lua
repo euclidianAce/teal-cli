@@ -72,7 +72,7 @@ local run = {
       local exit = 0
       repeat
          log.debug("Resuming thread")
-         local ok = coroutine.resume(script)
+         local ok, err = coroutine.resume(script)
          if not ok then
             exit = 1
             log.debug("Error in thread, getting stacktrace and removing traces from this file")
@@ -89,7 +89,7 @@ local run = {
                end)
             end
 
-            log.error("Error in script %s:\nTraceback:\n%s", ansi.bright.yellow(fname), table.concat(stack, "\n"))
+            log.error("Error in script %s:\n%s\nTraceback:\n%s", ansi.bright.yellow(fname), err, table.concat(stack, "\n"))
 
             break
          end
