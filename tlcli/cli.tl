@@ -74,6 +74,7 @@ local function prep(): Args
    end
    if args.debug then
       log.enable("debug")
+      log.debug("Debug output enabled")
    end
    if args.verbose then
       log.enable("verbose")
