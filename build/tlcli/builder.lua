@@ -27,7 +27,6 @@ function M.get_dependencies(file_name)
    if not content then       return nil, err end
    local tree = teal_parser:parse_string(content)
 
-
    local modules = {}
 
    for match in teal_parser:
@@ -38,8 +37,8 @@ function M.get_dependencies(file_name)
 
       match(tree:root()) do
 
-      if content:sub(match.captures.func_name:range()) == "require" then
-         local name = content:sub(match.captures.module_name:range())
+      if match.captures.func_name:source() == "require" then
+         local name = match.captures.module_name:source()
          if name:sub(1, 1):match("[\"\']") then
             name = name:sub(2, -2)
          else
@@ -48,7 +47,6 @@ function M.get_dependencies(file_name)
          table.insert(modules, module_name_to_file_name(name))
       end
    end
-
    return modules
 end
 
@@ -113,15 +111,12 @@ mark_predicate)
             table.insert(files_to_be_marked, { file_name, reason })
          end
       end
-
    end
    local dag = setmetatable({
       module_name = root_dir,
       nodes = setmetatable(nodes, nil),
    }, dag_mt)
-   log.debug("Built DAG: %s", require("inspect")(dag))
    for i, v in ipairs(files_to_be_marked) do
-
       dag:mark_for_update(v[1], v[2])
    end
    return dag
@@ -150,11 +145,5 @@ function DAG:marked_files()
       end
    end)
 end
-
-
-
-
-
-
 
 return M

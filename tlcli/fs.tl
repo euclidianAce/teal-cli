@@ -294,12 +294,7 @@ end
 
 function fs.get_output_file_name_components(filename: string): {string}
    local comps = fs.get_path_components(filename)
-   local ext = fs.get_extension(comps[#comps])
-   if ext == "lua" then
-      comps[#comps] = comps[#comps]:sub(1, -4) .. "out.lua"
-   elseif ext == "tl" then
-      comps[#comps] = comps[#comps]:sub(1, -3) .. "lua"
-   end
+   comps[#comps] = fs.get_output_file_name(comps[#comps])
    return comps
 end
 

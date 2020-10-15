@@ -26,7 +26,6 @@ function M.get_dependencies(file_name: string): {string}, string
    local content, err = fs.read(file_name)
    if not content then return nil, err end
    local tree = teal_parser:parse_string(content)
-   -- log.debug("Getting deps for %s", file_name)
 
    local modules: {string} = {}
 
@@ -38,8 +37,8 @@ function M.get_dependencies(file_name: string): {string}, string
                   -- TODO: the (identifier) @func_name hits some false positives
       :match(tree:root())
    do
-      if content:sub(match.captures.func_name:range()) == "require" then
-         local name = content:sub(match.captures.module_name:range())
+      if match.captures.func_name:source() == "require" then
+         local name = match.captures.module_name:source()
          if name:sub(1, 1):match("[\"\']") then
             name = name:sub(2, -2)
          else
@@ -48,7 +47,6 @@ function M.get_dependencies(file_name: string): {string}, string
          table.insert(modules, module_name_to_file_name(name))
       end
    end
-   -- log.debug("Found deps %s", require"inspect"(modules))
    return modules
 end
 
@@ -113,15 +111,12 @@ function M.build_dag(
             table.insert(files_to_be_marked, {file_name, reason})
          end
       end
-      -- log.debug("Built node for %s: %s", file_name, require"inspect"(nodes[file_name]))
    end
    local dag = setmetatable({
       module_name = root_dir,
       nodes = setmetatable(nodes, nil)
    }, dag_mt) as DAG
-   log.debug("Built DAG: %s", require"inspect"(dag))
    for i, v in ipairs(files_to_be_marked) do
-      -- log.debug("[DAG] Marking %s for update", v)
       dag:mark_for_update(v[1], v[2])
    end
    return dag
@@ -150,11 +145,5 @@ function DAG:marked_files(): function(): (string, string)
       end
    end) as function(): (string, string)
 end
-
--- local dag = M.build_dag("tlcli")
--- dag:mark_for_update("tlcli/ansi.tl", "because i said so")
--- for file, reason in dag:marked_files() do
-   -- log.verbose("file to update: %s\treason: %s", file, reason)
--- end
 
 return M

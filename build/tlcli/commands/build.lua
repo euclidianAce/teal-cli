@@ -168,15 +168,18 @@ fs.is_absolute(obj_dir),
       end
 
       local output_file_names = {}
-      local function get_output_file_name(filename)
-         if output_file_names[filename] then             return output_file_names[filename] end
-         local result = fs.get_output_file_name(filename)
+      local function get_output_file_name(file_name)
+         if output_file_names[file_name] then             return output_file_names[file_name] end
+         local result = fs.get_output_file_name(file_name)
 
+         if src_dir ~= "." then
+            result = result:sub(#src_dir + 2, -1)
+         end
          if build_dir ~= "." then
             result = fs.path_concat(build_dir, result)
          end
 
-         output_file_names[filename] = result
+         output_file_names[file_name] = result
          return result
       end
 
@@ -205,7 +208,7 @@ fs.is_absolute(obj_dir),
 
             draw_progress("Type checking", disp_file)
 
-            local res, err = util.teal.process(input_file, true)
+            local res, err = util.teal.process(input_file, fs.read(input_file), true)
             if err then
                exit = 1
                local start, finish = err:lower():find("^%s*error:?%s*")

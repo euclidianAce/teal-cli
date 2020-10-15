@@ -224,9 +224,9 @@ function M.teal.add_module(name: string)
 end
 
 -- TODO: use tl.Result once it's exposed
-function M.teal.type_check_file(filename: string): boolean, string
+function M.teal.type_check_file(file_name: string): boolean, string
    teal_setup_env(false)
-   local result, err = (tl.process as function(string, table, any, table): table, string)(filename, tl_env, nil, tl_modules)
+   local result, err = (tl.process as function(string, table, any, table): table, string)(file_name, tl_env, nil, tl_modules)
    if err then
       return nil, err
    end
@@ -289,9 +289,10 @@ function M.teal.compile_and_write(input_filename: string, type_check: boolean, o
    return true
 end
 
-function M.teal.process(input_filename: string, type_check: boolean): table, string
+local proc_str = tl.process_string as function(string, boolean, table, table, table, string): (table, string)
+function M.teal.process(input_file_name: string, file_content: string, type_check: boolean): table, string
    teal_setup_env(false)
-   local result, err = (tl.process as function(string, table, any, table): table, string)(input_filename, tl_env, nil, tl_modules)
+   local result, err = proc_str(file_content, false, tl_env, nil, tl_modules, input_file_name)
    if err then
       return nil, err
    end

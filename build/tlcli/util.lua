@@ -224,9 +224,9 @@ function M.teal.add_module(name)
 end
 
 
-function M.teal.type_check_file(filename)
+function M.teal.type_check_file(file_name)
    teal_setup_env(false)
-   local result, err = (tl.process)(filename, tl_env, nil, tl_modules)
+   local result, err = (tl.process)(file_name, tl_env, nil, tl_modules)
    if err then
       return nil, err
    end
@@ -289,9 +289,10 @@ function M.teal.compile_and_write(input_filename, type_check, output_filename)
    return true
 end
 
-function M.teal.process(input_filename, type_check)
+local proc_str = tl.process_string
+function M.teal.process(input_file_name, file_content, type_check)
    teal_setup_env(false)
-   local result, err = (tl.process)(input_filename, tl_env, nil, tl_modules)
+   local result, err = proc_str(file_content, false, tl_env, nil, tl_modules, input_file_name)
    if err then
       return nil, err
    end
