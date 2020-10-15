@@ -266,7 +266,7 @@ function fs.add_to_path(dirname: string)
 end
 
 function fs.split_extension(filename: string): string, string
-   local basename, extension = string.match(filename, "(.*)%.([a-z]+)$")
+   local basename, extension = string.match(filename, "(.-)%.([^" .. fs.get_path_separator() .. "]*)$")
    extension = extension and extension:lower()
    return basename, extension
 end

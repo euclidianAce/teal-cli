@@ -3,9 +3,10 @@ local argparse = require("argparse")
 local tl = require("tl")
 
 local fs = require("tlcli.fs")
-local log = require("tlcli.log")
-local util = require("tlcli.util")
 local loader = require("tlcli.loader")
+local log = require("tlcli.log")
+local runner = require("tlcli.runner")
+local util = require("tlcli.util")
 
 local types = require("tlcli.types")
 local Args = types.Args
@@ -102,14 +103,17 @@ end
 
 return function()
    local args = prep()
-   tl.loader()
-   local ok, exit = pcall(loader.loaded_commands[args.command as string].command, args)
-   if not ok then
-      log.error("Command errored out: %s", exit as string)
-   end
+   local exit = 0
+   local cmd = runner.wrap(function()
+      tl.loader()
+      exit = loader.loaded_commands[args.command as string].command(args)
+   end)
+   local ok, res = cmd:run()
    util.check_hooks()
    log.flush()
    if not ok then
+      log.set_buffered(false)
+      log.error("Error in command %s\n%s\n%s", args.command as string, res, cmd:get_traceback())
       os.exit(1)
    end
    os.exit(exit)

@@ -45,7 +45,7 @@ describe("#build #command", function()
       })
    end)
    it("should only compile .tl files, not .lua or .d.tl files", function()
-      proj(finally, {
+      proj(function() end, {
          dir = {
             "thing.d.tl",
             "blah.lua",

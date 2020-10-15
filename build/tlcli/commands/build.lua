@@ -155,6 +155,9 @@ fs.is_absolute(obj_dir),
 
 
       local function is_source_newer(source_path, target_path)
+         if not target_path then
+            return ""
+         end
          local retval = false
          if args.update_all then
             return "Forced update"
@@ -209,6 +212,8 @@ fs.is_absolute(obj_dir),
             draw_progress("Type checking", disp_file)
 
             local res, err = util.teal.process(input_file, fs.read(input_file), true)
+
+            b:step()
             if err then
                exit = 1
                local start, finish = err:lower():find("^%s*error:?%s*")
@@ -219,10 +224,16 @@ fs.is_absolute(obj_dir),
                if not flags.keep_going then
                   fatal_err = err
                end
+               return
             end
 
-            b:step()
-            if err then                return end
+            local ext = fs.get_extension(input_file)
+            if ext == "lua" or ext == "d.tl" then
+               log.normal("Type checked: %s", disp_file)
+               b:step()
+               return
+            end
+
             coroutine.yield()
             if not args["pretend"] then
                local fh = assert(io.open(output_file, "w"))

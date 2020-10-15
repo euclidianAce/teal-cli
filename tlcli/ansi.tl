@@ -43,6 +43,7 @@ local bright: {string:string} = {
 
 for color, esc_seq in pairs(bright) do
    M.bright[color] = function(s: string): string
+      if not s then return "" end
       return CSI:format(bright[color]) .. s .. reset
    end
 end

@@ -4,6 +4,7 @@ local tl = require("tl")
 
 local ansi = require("tlcli.ansi")
 local log = require("tlcli.log")
+local runner = require("tlcli.runner")
 local util = require("tlcli.util")
 
 local Args = require("tlcli.types").Args
@@ -59,43 +60,18 @@ local run: Command = {
 
       table.remove(script_args, 1)
 
-      tl.loader()
       log.debug("Creating thread...")
-      local script = coroutine.create(function()
-         log.debug("[thread] Executing...")
-         log.debug("=============================")
+      local script = runner.wrap(function()
+         tl.loader()
          chunk(table.unpack(script_args))
-         log.debug("=============================")
-         log.debug("[thread] done")
       end)
 
-      local exit = 0
-      repeat
-         log.debug("Resuming thread")
-         local ok, err = coroutine.resume(script)
-         if not ok then
-            exit = 1
-            log.debug("Error in thread, getting stacktrace and removing traces from this file")
-            local trace = debug.traceback(script)
-            local stack = util.generate(util.split(trace, "\n", true))
-            -- get rid of the info from this file
-            table.remove(stack, 1)
-            table.remove(stack)
-            table.remove(stack)
-
-            for i, v in ipairs(stack) do
-               stack[i] = v:gsub("^(%s*)(.-):(%d+)", function(ws: string, file: string, line_num: string): string
-                  return ws .. ansi.bright.yellow(file) .. ":" .. ansi.bright.magenta(line_num)
-               end)
-            end
-
-            log.error("Error in script %s:\n%s\nTraceback:\n%s", ansi.bright.yellow(fname), err, table.concat(stack, "\n"))
-
-            break
-         end
-      until coroutine.status(script) == "dead"
-      log.debug("Returning with exit code %d", exit)
-      return exit
+      local ok, res = script:run()
+      if not ok then
+         log.error("Error in script %s\n%s\n%s", ansi.bright.yellow(fname), res, script:get_traceback())
+         return 1
+      end
+      return 0
    end,
 }
 
