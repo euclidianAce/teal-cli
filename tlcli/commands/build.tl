@@ -195,6 +195,8 @@ local build: Command = {
       local fatal_err: string
 
       local dag = builder.build_dag(src_dir, options.include, options.exclude, function(file_name: string): string
+         local ext <const> = fs.get_extension(file_name)
+         if ext == "d.tl" or ext == "lua" then return nil end
          local out_file = get_output_file_name(file_name)
          return is_source_newer(file_name, out_file)
       end)
@@ -250,7 +252,7 @@ local build: Command = {
       end
 
       if total_steps == 0 then
-         log.normal("Nothing to build...")
+         log.normal("All files up to date")
          return 0
       end
 
