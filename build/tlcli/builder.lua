@@ -32,20 +32,18 @@ function M.get_dependencies(file_name)
    for match in teal_parser:
       query([[ (function_call
                   (identifier) @func_name
-                  (arguments (string) @module_name)) ]]):
-
+                  (arguments (string) @module_name)
+                  (#eq? @func_name "require")) ]]):
 
       match(tree:root()) do
 
-      if match.captures.func_name:source() == "require" then
-         local name = match.captures.module_name:source()
-         if name:sub(1, 1):match("[\"\']") then
-            name = name:sub(2, -2)
-         else
-            name = name:match("%[=*%[(.*)%]=*%]")
-         end
-         table.insert(modules, module_name_to_file_name(name))
+      local name = match.captures.module_name:source()
+      if name:sub(1, 1):match("[\"\']") then
+         name = name:sub(2, -2)
+      else
+         name = name:match("%[=*%[(.*)%]=*%]")
       end
+      table.insert(modules, module_name_to_file_name(name))
    end
    return modules
 end

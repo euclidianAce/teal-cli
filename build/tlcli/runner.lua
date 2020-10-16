@@ -31,7 +31,7 @@ end
 
 function Sandbox:run()
    log.debug("[%s] Executing...", tostring(self.thread))
-   log.debug("=============================")
+   log.debug(ansi.dark.green("============================="))
    repeat
       local ok, err = coroutine.resume(self.thread)
       if not ok then
@@ -41,7 +41,7 @@ function Sandbox:run()
          return false, err
       end
    until coroutine.status(self.thread) == "dead"
-   log.debug("=============================")
+   log.debug(ansi.dark.green("============================="))
    log.debug("[%s] Done", tostring(self.thread))
    return true
 end

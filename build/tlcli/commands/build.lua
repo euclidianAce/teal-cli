@@ -248,7 +248,7 @@ fs.is_absolute(obj_dir),
             end
             b:step()
          end)
-         total_steps = total_steps + 4
+         total_steps = total_steps + 2
       end
 
       if total_steps == 0 then
@@ -272,6 +272,9 @@ fs.is_absolute(obj_dir),
       ansi.cursor.up(1)
       ansi.cursor.set_column(0)
       io.flush()
+
+      log.debug("Bar finished with %d/%d progress", b.steps, b.total_steps)
+
       log.flush()
 
       return exit
