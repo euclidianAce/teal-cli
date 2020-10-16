@@ -14,7 +14,7 @@ You can add your own commands to the cli by putting a .lua file that returns a s
 
 ## Dependencies
  - Teal itself (along with its dependencies)
- - that's it (currently)
+ - ltreesitter (for quickly parsing internal dependencies)
 
 # Installation
 
@@ -25,6 +25,7 @@ luarocks install --server=https://luarocks.org/dev teal-cli
 
 ## Manual
 
+(make sure you have the dependencies)
 1. clone this repo
 2. navigate to the root directory and run `tl build` to compile (and run `busted` if you'd like to run the test suite)
 3. add the `build` directory to your lua path, or copy it somewhere in your lua path
@@ -74,7 +75,14 @@ This is intended to be a build system first and foremost. So most features are w
  - `build`
  	- can be run from anywhere within your project, not just the root
 	- only compiles when sources have changed, similar to Make and other build tools
-	- your source directory doesn't have to be the same name as your module to compile, if you provide a table of the type `record source: string; name: string end` to `project "module"`, Teal will know how to search for your internal modules
+	- your source directory doesn't have to be the same name as your module to compile, if you provide a table of the type
+	 ```
+	 record ModuleInfo
+		source: string
+		name: string
+	 end
+	 ```
+	 to `project "module"`, Teal will know how to search for your internal modules
 	for example: if our project was laid out as such
 	```
 	src/
