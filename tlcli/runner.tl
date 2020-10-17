@@ -1,7 +1,7 @@
 
 local ansi = require("tlcli.ansi")
 local util = require("tlcli.util")
-local log = require"tlcli.log"
+local log = require("tlcli.log")
 
 local record Sandbox
    thread: thread
