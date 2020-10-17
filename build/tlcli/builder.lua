@@ -16,7 +16,7 @@ local M = {
 }
 
 local ts = require("ltreesitter")
-local teal_parser = ts.require("teal")
+local teal_parser = ts.require("tree-sitter-teal-parser", "teal")
 
 local function module_name_to_file_name(mod_name)
    return mod_name:gsub("%.", fs.get_path_separator()) .. ".tl"

@@ -3,3 +3,4 @@ tmp
 /lua
 /lua_modules
 /.luarocks
+*.so

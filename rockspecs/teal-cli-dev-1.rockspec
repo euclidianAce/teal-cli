@@ -20,6 +20,12 @@ dependencies = {
 build = {
    type = "builtin",
    modules = {
+      ["tree-sitter-teal-parser"] = {
+         sources = {
+            "tree-sitter-teal/src/parser.c",
+            "tree-sitter-teal/src/scanner.c",
+         },
+      },
       ["tlcli.ansi"] = "build/tlcli/ansi.lua",
       ["tlcli.cli"] = "build/tlcli/cli.lua",
       ["tlcli.commands.build"] = "build/tlcli/commands/build.lua",
@@ -29,6 +35,7 @@ build = {
       ["tlcli.fs"] = "build/tlcli/fs.lua",
       ["tlcli.loader"] = "build/tlcli/loader.lua",
       ["tlcli.log"] = "build/tlcli/log.lua",
+      ["tlcli.runner"] = "build/tlcli/runner.lua",
       ["tlcli.task"] = "build/tlcli/task.lua",
       ["tlcli.types"] = "build/tlcli/types.lua",
       ["tlcli.ui.bar"] = "build/tlcli/ui/bar.lua",
@@ -45,6 +52,7 @@ build = {
          ["tlcli.fs"] = "tlcli/fs.tl",
          ["tlcli.loader"] = "tlcli/loader.tl",
          ["tlcli.log"] = "tlcli/log.tl",
+         ["tlcli.runner"] = "tlcli/runner.tl",
          ["tlcli.task"] = "tlcli/task.tl",
          ["tlcli.types"] = "tlcli/types.tl",
          ["tlcli.ui.bar"] = "tlcli/ui/bar.tl",

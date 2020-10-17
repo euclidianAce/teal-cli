@@ -1,0 +1,3 @@
+[submodule "tree-sitter-teal"]
+	path = tree-sitter-teal
+	url = git@github.com:euclidianAce/tree-sitter-teal.git
