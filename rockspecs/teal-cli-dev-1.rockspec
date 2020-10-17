@@ -27,6 +27,7 @@ build = {
          },
       },
       ["tlcli.ansi"] = "build/tlcli/ansi.lua",
+      ["tlcli.builder"] = "build/tlcli/builder.lua",
       ["tlcli.cli"] = "build/tlcli/cli.lua",
       ["tlcli.commands.build"] = "build/tlcli/commands/build.lua",
       ["tlcli.commands.check"] = "build/tlcli/commands/check.lua",
@@ -44,6 +45,7 @@ build = {
    install = {
       lua = {
          ["tlcli.ansi"] = "tlcli/ansi.tl",
+         ["tlcli.builder"] = "tlcli/builder.tl",
          ["tlcli.cli"] = "tlcli/cli.tl",
          ["tlcli.commands.build"] = "tlcli/commands/build.tl",
          ["tlcli.commands.check"] = "tlcli/commands/check.tl",
