@@ -56,7 +56,7 @@ local function prep()
       loader.loaded_commands[cmd.name] = cmd
    end
    local user_commands, user_cmd_err = loader.load_user_commands()
-   if user_cmd_err then
+   if user_cmd_err and not user_cmd_err:match("No such file or directory") then
       log.error("Error loading user commands:\n%s", user_cmd_err)
    end
    for i, v in ipairs(user_commands) do
