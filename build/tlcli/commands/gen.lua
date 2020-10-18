@@ -1,7 +1,7 @@
 
 local argparse = require("argparse")
 
-local ansi = require("tlcli.ansi")
+local cs = require("tlcli.ui.colorscheme")
 local fs = require("tlcli.fs")
 local log = require("tlcli.log")
 local util = require("tlcli.util")
@@ -44,7 +44,7 @@ local gen = {
 
             local out_name = (args.output or
             fs.get_output_file_name(fname))
-            local disp_name = ansi.bright.yellow(out_name)
+            local disp_name = cs.color("file_name", out_name)
             local fh, oerr = io.open(out_name, "w")
             if not fh then
                log.error("Unable to open %s: %s", disp_name, oerr)

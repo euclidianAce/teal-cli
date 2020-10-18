@@ -111,6 +111,11 @@ describe("#build #command", function()
          })
       end)
    end)
+   describe("modules", function()
+      pending("should be able to correctly resolve requires", function()
+
+      end)
+   end)
    pending("cmodule config", function()
       it("should compile a c module into a .so/.dll file", function()
          proj(finally, {

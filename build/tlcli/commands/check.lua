@@ -1,6 +1,7 @@
 
 local argparse = require("argparse")
-local ansi = require("tlcli.ansi")
+
+local cs = require("tlcli.ui.colorscheme")
 local fs = require("tlcli.fs")
 local log = require("tlcli.log")
 local util = require("tlcli.util")
@@ -9,16 +10,12 @@ local types = require("tlcli.types")
 local Args = types.Args
 local Command = types.Command
 
-local b = ansi.bright
-local r = ansi.reset()
-
-
-local log_str = b.green("Type checked: ") .. b.yellow("%s")
+local log_str = "Type checked: " .. cs.color("file_name", "%s")
 local long_log_str = log_str .. "\n" ..
-"   Use " .. b.magenta("tlc run") .. b.yellow(" %s\n") ..
-"      to run " .. b.yellow("%s") .. " as a script\n" ..
-"   Use " .. b.magenta("tlc gen") .. b.yellow(" %s\n") ..
-"      to generate " .. b.yellow("%s")
+"   Use " .. cs.color("special", "tlc run") .. cs.color("file_name", " %s\n") ..
+"      to run " .. cs.color("file_name", "%s") .. " as a script\n" ..
+"   Use " .. cs.color("special", "tlc gen") .. cs.color("file_name", " %s\n") ..
+"      to generate " .. cs.color("file_name", "%s")
 
 
 local flags = util.protected_proxy({
@@ -50,10 +47,11 @@ local check = {
             if #args["script"] > 1 then
                log.normal(log_str, fname)
             else
+               local comps = fs.get_output_file_name_components(fname)
                log.normal(
 long_log_str,
 fname, fname, fname, fname,
-fs.get_output_file_name(fname))
+comps[#comps])
 
             end
          end

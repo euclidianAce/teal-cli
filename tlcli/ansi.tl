@@ -1,7 +1,9 @@
 
+global type Colorizer = function(string): string
+
 local M = {
-   bright: {string:(function(string):string)} = {},
-   dark: {string:(function(string):string)} = {},
+   bright: {string:Colorizer} = {},
+   dark: {string:Colorizer} = {},
    fg = {
       rgb: function(number,number,number):string = nil,
       hex: function(string|number):string = nil,
@@ -45,12 +47,13 @@ for color, esc_seq in pairs(bright) do
    M.bright[color] = function(s: string): string
       if not s then return "" end
       return CSI:format(bright[color]) .. s .. reset
-   end
+   end as Colorizer
 end
 for color, esc_seq in pairs(dark) do
    M.dark[color] = function(s: string): string
+      if not s then return "" end
       return CSI:format(dark[color]) .. s .. reset
-   end
+   end as Colorizer
 end
 
 local CSIfg = string.char(27) .. "[38;2;%d;%d;%dm"

@@ -1,4 +1,6 @@
 
+ Colorizer = {}
+
 local M = {
    bright = {},
    dark = {},
@@ -49,6 +51,7 @@ for color, esc_seq in pairs(bright) do
 end
 for color, esc_seq in pairs(dark) do
    M.dark[color] = function(s)
+      if not s then          return "" end
       return CSI:format(dark[color]) .. s .. reset
    end
 end

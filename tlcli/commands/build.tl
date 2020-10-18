@@ -4,6 +4,7 @@ local lfs = require("lfs")
 local tl = require("tl")
 
 local ansi = require("tlcli.ansi")
+local cs = require("tlcli.ui.colorscheme")
 local fs = require("tlcli.fs")
 local log = require("tlcli.log")
 local util = require("tlcli.util")
@@ -95,9 +96,9 @@ local build: Command = {
                if mode ~= "directory" then
                   if err and err:match("No such file or directory$") then
                      if args.pretend then
-                        log.normal("Would create directory %s", ansi.bright.green(parent))
+                        log.normal("Would create directory %s", cs.color("dir_name", parent))
                      else
-                        log.normal("Created directory %s", ansi.bright.green(parent))
+                        log.normal("Created directory %s", cs.color("dir_name", parent))
                         lfs.mkdir(parent)
                      end
                      parents_that_exist[parent] = true
@@ -115,21 +116,21 @@ local build: Command = {
       -- {{{ Assert relative paths
       if util.error_if(
          fs.is_absolute(src_dir),
-         "Source directory (" .. ansi.bright.yellow(src_dir) .. ") is not relative"
+         "Source directory (" .. cs.color("file_name", src_dir) .. ") is not relative"
       ) then
          return 1
       end
 
       if util.error_if(
          fs.is_absolute(build_dir),
-         "Build directory (" .. ansi.bright.yellow(build_dir) .. ") is not relative"
+         "Build directory (" .. cs.color("file_name", build_dir) .. ") is not relative"
       ) then
          return 1
       end
 
       if util.error_if(
          fs.is_absolute(obj_dir),
-         "Object directory (" .. ansi.bright.yellow(obj_dir) .. ") is not relative"
+         "Object directory (" .. cs.color("file_name", obj_dir) .. ") is not relative"
       ) then
          return 1
       end
@@ -201,13 +202,13 @@ local build: Command = {
          return is_source_newer(file_name, out_file)
       end)
       for input_file, reason in dag:marked_files() do
-         log.verbose("Compiling: %s\n   Reason: %s", ansi.bright.yellow(input_file), ansi.bright.green(reason))
+         log.verbose("Compiling: %s\n   Reason: %s", cs.color("file_name", input_file), cs.color("debug", reason))
          local output_file <const> = get_output_file_name(input_file)
          scheduler.wrap(function()
             check_parents(output_file)
          end)
-         local disp_file = ansi.bright.yellow(input_file)
-         local disp_output_file = ansi.bright.yellow(output_file)
+         local disp_file = cs.color("file_name", input_file)
+         local disp_output_file = cs.color("file_name", output_file)
          scheduler.wrap(function()
             coroutine.yield()
 

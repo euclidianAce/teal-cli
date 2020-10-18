@@ -2,7 +2,7 @@
 local argparse = require("argparse")
 local tl = require("tl")
 
-local ansi = require("tlcli.ansi")
+local cs = require("tlcli.ui.colorscheme")
 local log = require("tlcli.log")
 local runner = require("tlcli.runner")
 local util = require("tlcli.util")
@@ -24,7 +24,7 @@ local run: Command = {
       log.debug("Type checking and loading file %s", fname)
       local chunk, err = util.teal.type_check_and_load(fname)
       if not chunk then
-         log.error("Error loading %s: %s", ansi.bright.yellow(fname), err)
+         log.error("Error loading %s: %s", cs.color("file_name", fname), err)
          return 1
       end
 
@@ -68,7 +68,7 @@ local run: Command = {
 
       local ok, res = script:run()
       if not ok then
-         log.error("Error in script %s\n%s\n%s", ansi.bright.yellow(fname), res, script:get_traceback())
+         log.error("Error in script %s\n%s\n%s", cs.color("file_name", fname), res, script:get_traceback())
          return 1
       end
       return 0
