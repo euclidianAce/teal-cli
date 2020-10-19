@@ -4,3 +4,4 @@ tmp
 /lua_modules
 /.luarocks
 *.so
+tree-sitter-teal/src/*.o
