@@ -12,6 +12,7 @@ local record SchedulerInterface
    run: function()
    schedule: function(thread)
    wrap: function(function)
+   done: function(): boolean
 end
 
 local M = {
@@ -49,6 +50,12 @@ function M.scheduler(mode: SchedulerMode): SchedulerInterface
             table.insert(pool, t)
          end,
          wrap = default_wrap(pool),
+         done = function(): boolean
+            if next(pool) then
+               return false
+            end
+            return true
+         end,
       }
    elseif mode == "stack" then
       local stack: {thread} = {}
@@ -76,6 +83,9 @@ function M.scheduler(mode: SchedulerMode): SchedulerInterface
             table.insert(stack, t)
          end,
          wrap = default_wrap(stack),
+         done = function(): boolean
+            return #stack > 0
+         end
       }
    elseif mode == "queue" then
       local queue: {number:thread} = {}
@@ -103,6 +113,9 @@ function M.scheduler(mode: SchedulerMode): SchedulerInterface
             table.insert(queue, t)
          end,
          wrap = default_wrap(queue),
+         done = function(): boolean
+            return #queue > 0
+         end,
       }
    elseif mode == "staged" then
       -- whenever a coroutine completes a step, it moves up a stage
@@ -143,6 +156,12 @@ function M.scheduler(mode: SchedulerMode): SchedulerInterface
          end,
          wrap = function(f: function)
             table.insert(stages[1], coroutine.create(f))
+         end,
+         done = function(): boolean
+            for _, v in ipairs(stages) do
+               if next(v) then return false end
+            end
+            return true
          end
       }
    else

@@ -112,8 +112,26 @@ describe("#build #command", function()
       end)
    end)
    describe("modules", function()
-      pending("should be able to correctly resolve requires", function()
-
+      it("should be able to correctly resolve requires", function()
+         proj(finally, {
+            dir = {
+               src = {
+                  "a.tl",
+                  ["b.tl"] = [[ require "my_module.a" ]],
+               },
+               ["tlcconfig.lua"] = [[
+                  project "module" { source = "src", name = "my_module" }
+               ]],
+            },
+            command = "build",
+            args = {},
+            generated = {
+               src = {
+                  "a.lua",
+                  "b.lua",
+               },
+            },
+         })
       end)
    end)
    pending("cmodule config", function()

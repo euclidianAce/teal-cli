@@ -37,6 +37,7 @@ function M.get_dependencies(file_name)
 
       match(tree:root()) do
 
+      assert(match.captures.func_name:source() == "require", "ltreesitter query predicate failed (this is a bug in ltreesitter)")
       local name = match.captures.module_name:source()
       if name:sub(1, 1):match("[\"\']") then
          name = name:sub(2, -2)

@@ -325,7 +325,11 @@ local function make_hijacked_search_module(require_prefix: string, actual_name: 
       local found: string
       local tried: {string} = {}
 
-      local altered_module_name = module_name:gsub("^" .. require_prefix, actual_name)
+      local altered_module_name = module_name
+      if module_name:sub(1, #require_prefix) == require_prefix then
+         altered_module_name = actual_name .. module_name:sub(#require_prefix+1, -1)
+      end
+      -- local altered_module_name = module_name:gsub("^" .. require_prefix, actual_name)
       log.queue("debug", [[Attempting to load module with modified name
       expected prefix:  %s
    replacement prefix:  %s

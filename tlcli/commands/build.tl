@@ -56,6 +56,8 @@ local build: Command = {
          :args(0)
       cmd:option("-u --update-all", "Compile each source file as if it has been edited")
          :args(0)
+      cmd:option("-i --ignore-type-errors", "Compile files even if there are type errors")
+         :args(0)
    end,
 
    command = function(args: Args): number
@@ -69,9 +71,11 @@ local build: Command = {
       end
 
       lfs.chdir(fs.find_project_root())
-      local src_dir: string = options.source_dir as string
-      local build_dir: string = options.build_dir as string
-      local obj_dir: string = options.object_dir as string
+      local src_dir <const>: string = options.source_dir as string or "."
+      local build_dir <const>: string = options.build_dir as string or "."
+      -- local obj_dir: string = options.object_dir as string or "."
+
+      local ignore_type_errors <const> = args.ignore_type_errors as boolean
 
       do
          local attrs, reason = lfs.attributes(src_dir)
@@ -128,12 +132,12 @@ local build: Command = {
          return 1
       end
 
-      if util.error_if(
-         fs.is_absolute(obj_dir),
-         "Object directory (" .. cs.color("file_name", obj_dir) .. ") is not relative"
-      ) then
-         return 1
-      end
+      -- if util.error_if(
+         -- fs.is_absolute(obj_dir),
+         -- "Object directory (" .. cs.color("file_name", obj_dir) .. ") is not relative"
+      -- ) then
+         -- return 1
+      -- end
       -- }}}
       -- {{{ Setup Progress Bar
       local p = io.popen("stty size") --TODO: this isn't super portable, and the progress bar should be toggleable
@@ -189,6 +193,7 @@ local build: Command = {
 
       -- staged will make everything get type checked first, round-robin just lets stuff happen
       local scheduler = task.scheduler(flags.keep_going and "round-robin" or "staged")
+      log.debug("Initialized scheduler of kind: %s", flags.keep_going and "round-robin" or "staged")
 
       local update_so = false
       local exit = 0
@@ -219,7 +224,7 @@ local build: Command = {
             b:step()
             if err then
                exit = 1
-               local start, finish = err:lower():find("^%s*error:?%s*")
+               local start <const>, finish <const> = err:lower():find("^%s*error:?%s*")
                if finish then
                   err = err:sub(finish+1, -1)
                end
@@ -261,7 +266,9 @@ local build: Command = {
 
       io.write("\n")
 
-      scheduler.run()
+      repeat
+         scheduler.step()
+      until fatal_err or scheduler.done()
       -- c_mod_scheduler.run()
 
       ansi.cursor.up(1)

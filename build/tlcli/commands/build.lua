@@ -56,6 +56,8 @@ local build = {
       args(0)
       cmd:option("-u --update-all", "Compile each source file as if it has been edited"):
       args(0)
+      cmd:option("-i --ignore-type-errors", "Compile files even if there are type errors"):
+      args(0)
    end,
 
    command = function(args)
@@ -69,9 +71,11 @@ local build = {
       end
 
       lfs.chdir(fs.find_project_root())
-      local src_dir = options.source_dir
-      local build_dir = options.build_dir
-      local obj_dir = options.object_dir
+      local src_dir = options.source_dir or "."
+      local build_dir = options.build_dir or "."
+
+
+      local ignore_type_errors = args.ignore_type_errors
 
       do
          local attrs, reason = lfs.attributes(src_dir)
@@ -128,12 +132,12 @@ fs.is_absolute(build_dir),
          return 1
       end
 
-      if util.error_if(
-fs.is_absolute(obj_dir),
-"Object directory (" .. cs.color("file_name", obj_dir) .. ") is not relative") then
 
-         return 1
-      end
+
+
+
+
+
 
 
       local p = io.popen("stty size")
@@ -189,6 +193,7 @@ fs.is_absolute(obj_dir),
 
 
       local scheduler = task.scheduler(flags.keep_going and "round-robin" or "staged")
+      log.debug("Initialized scheduler of kind: %s", flags.keep_going and "round-robin" or "staged")
 
       local update_so = false
       local exit = 0
@@ -261,7 +266,9 @@ fs.is_absolute(obj_dir),
 
       io.write("\n")
 
-      scheduler.run()
+      repeat
+         scheduler.step()
+      until fatal_err or scheduler.done()
 
 
       ansi.cursor.up(1)

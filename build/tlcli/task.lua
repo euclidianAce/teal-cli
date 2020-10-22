@@ -14,6 +14,7 @@ local SchedulerInterface = {}
 
 
 
+
 local M = {
    SchedulerMode = SchedulerMode,
    SchedulerInterface = SchedulerInterface,
@@ -49,6 +50,12 @@ function M.scheduler(mode)
             table.insert(pool, t)
          end,
          wrap = default_wrap(pool),
+         done = function()
+            if next(pool) then
+               return false
+            end
+            return true
+         end,
       }
    elseif mode == "stack" then
       local stack = {}
@@ -76,6 +83,9 @@ function M.scheduler(mode)
             table.insert(stack, t)
          end,
          wrap = default_wrap(stack),
+         done = function()
+            return #stack > 0
+         end,
       }
    elseif mode == "queue" then
       local queue = {}
@@ -103,6 +113,9 @@ function M.scheduler(mode)
             table.insert(queue, t)
          end,
          wrap = default_wrap(queue),
+         done = function()
+            return #queue > 0
+         end,
       }
    elseif mode == "staged" then
 
@@ -143,6 +156,12 @@ function M.scheduler(mode)
          end,
          wrap = function(f)
             table.insert(stages[1], coroutine.create(f))
+         end,
+         done = function()
+            for _, v in ipairs(stages) do
+               if next(v) then                   return false end
+            end
+            return true
          end,
       }
    else
