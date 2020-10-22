@@ -9,6 +9,12 @@
  - Extensibility and some more conveniece features
  - Complies to freedesktop standards (the global config file goes to `$XDG_CONFIG_HOME/teal`)
 
+## Why NOT use this over the official one?
+ - Consider literally everything about this unstable until I make a release for luarocks
+ 	- this won't be for a while
+ - This is extremely catered towards my needs in particular
+ - Features could be introduced in one commit, then removed two commits later for refactoring
+
 ## Extensibility
 You can add your own commands to the cli by putting a .lua file that returns a specially formatted module (Docs coming eventually™) in `$XDG_CONFIG_HOME/teal/commands`. Additionally, some useful modules are exposed through the `tlcli` namespace. In particular `tlcli.fs`, `tlcli.util`, and `tlcli.loader` will probably be the most useful externally.
 
