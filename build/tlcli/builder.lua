@@ -32,9 +32,9 @@ function M.get_dependencies(file_name)
    for match in teal_parser:
       query([[ (function_call
                   (identifier) @func_name
+                  .
                   (arguments (string) @module_name)
                   (#eq? @func_name "require")) ]]):
-
       match(tree:root()) do
 
       local name = match.captures.module_name:source()

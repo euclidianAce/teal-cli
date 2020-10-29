@@ -294,47 +294,47 @@ fs.is_absolute(obj_dir),
                options[k] = v
             end
          end
-      elseif opt == "cmodule" then
-         return function(t)
 
-            if not t.name or type(t.name) ~= "string" then
-               log.error("Name not provided for c module")
-               return
-            end
-            if c_modules[t.name] then
-               log.error("Module \"%s\" was already specified")
-               return
-            end
-            if not (t.include or t.exclude) then
-               log.error("Specify source files for c module \"%s\" with the \"include\" and \"exclude\" fields", t.name)
-               return
-            end
-            local m = {
-               include = {},
-               exclude = {},
-               source = {},
-               o_files = {},
-            }
-            if t.include then
-               for i, v in ipairs(t.include) do
-                  if type(v) == "string" then
-                     table.insert(m.include, v)
-                  else
-                     log.warn("Non string entry in \"include\" field")
-                  end
-               end
-            end
-            if t.exclude then
-               for i, v in ipairs(t.exclude) do
-                  if type(v) == "string" then
-                     table.insert(m.exclude, v)
-                  else
-                     log.warn("Non string entry in \"exclude\" field")
-                  end
-               end
-            end
-            c_modules[t.name] = m
-         end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
       end
    end,
 }

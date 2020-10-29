@@ -137,11 +137,11 @@ local function dir_iter(dirname: string)
       if dirname == "." then
          dirname = ""
       end
-      -- ignore hidden files by default TODO: users should be allowed to opt out
-      if file ~= ".." and file:sub(1,1) ~= "." then
+      -- ignore hidden files/dont chdir by default TODO: users should be allowed to opt out
+      if file:sub(1,1) ~= "." then
          if lfs.attributes(fs.path_concat(dirname, file), "mode") == "directory" then
             dir_iter(fs.path_concat(dirname, file))
-         elseif file:sub(1,1) ~= "." then
+         else
             coroutine.yield(fs.path_concat(dirname, file))
          end
       end

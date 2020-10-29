@@ -138,10 +138,10 @@ local function dir_iter(dirname)
          dirname = ""
       end
 
-      if file ~= ".." and file:sub(1, 1) ~= "." then
+      if file:sub(1, 1) ~= "." then
          if lfs.attributes(fs.path_concat(dirname, file), "mode") == "directory" then
             dir_iter(fs.path_concat(dirname, file))
-         elseif file:sub(1, 1) ~= "." then
+         else
             coroutine.yield(fs.path_concat(dirname, file))
          end
       end

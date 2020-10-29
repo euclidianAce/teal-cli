@@ -17,6 +17,7 @@ function Sandbox:get_traceback()
    local trace = debug.traceback(self.thread)
    local stack = util.generate(util.split(trace, "\n", true))
 
+
    table.remove(stack, 1)
    table.remove(stack)
    table.remove(stack)

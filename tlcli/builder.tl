@@ -32,9 +32,9 @@ function M.get_dependencies(file_name: string): {string}, string
    for match in teal_parser
       :query[[ (function_call
                   (identifier) @func_name
+                  .
                   (arguments (string) @module_name)
                   (#eq? @func_name "require")) ]]
-                  -- TODO(tree-sitter-teal): the (identifier) @func_name hits some false positives
       :match(tree:root())
    do
       local name = match.captures.module_name:source()

@@ -16,6 +16,7 @@ function Sandbox:get_traceback(): string
    log.debug("Error in thread, getting stacktrace and removing traces from this file")
    local trace = debug.traceback(self.thread)
    local stack = util.generate(util.split(trace, "\n", true))
+
    -- get rid of the info from this file
    table.remove(stack, 1)
    table.remove(stack)
