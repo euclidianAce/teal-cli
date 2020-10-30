@@ -61,9 +61,13 @@ local run: Command = {
       table.remove(script_args, 1)
 
       log.debug("Creating thread...")
+
+      -- TODO: when tlc bootstraps itself, the compat53 thing is inserted
+      global unpack: function<T>({T}): (T...)
+      local unpack = unpack or table.unpack
       local script = runner.wrap(function()
          tl.loader()
-         chunk(table.unpack(script_args))
+         chunk(unpack(script_args))
       end)
 
       local ok, res = script:run()

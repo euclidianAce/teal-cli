@@ -241,7 +241,7 @@ fs.is_absolute(obj_dir),
             if not args["pretend"] then
                local fh = assert(io.open(output_file, "w"))
                draw_progress("Writing", disp_output_file)
-               local ok = fh:write(util.teal.pretty_print_ast(res.ast))
+               local ok = fh:write(util.teal.pretty_print_ast(res.ast), "\n")
                assert(fh:close())
                log.normal("Wrote %s", disp_output_file)
             else

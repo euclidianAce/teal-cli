@@ -61,9 +61,13 @@ local run = {
       table.remove(script_args, 1)
 
       log.debug("Creating thread...")
+
+
+
+      local unpack = unpack or table.unpack
       local script = runner.wrap(function()
          tl.loader()
-         chunk(table.unpack(script_args))
+         chunk(unpack(script_args))
       end)
 
       local ok, res = script:run()

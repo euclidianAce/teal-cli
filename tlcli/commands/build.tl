@@ -241,7 +241,7 @@ local build: Command = {
             if not args["pretend"] then
                local fh = assert(io.open(output_file, "w"))
                draw_progress("Writing", disp_output_file)
-               local ok = fh:write(util.teal.pretty_print_ast(res.ast as table))
+               local ok = fh:write(util.teal.pretty_print_ast(res.ast as table), "\n")
                assert(fh:close())
                log.normal("Wrote %s", disp_output_file)
             else

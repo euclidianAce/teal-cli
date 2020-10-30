@@ -260,7 +260,7 @@ function M.teal.compile(filename, type_check)
 end
 
 function M.teal.type_check_and_load(filename)
-   local code, err = M.teal.compile(filename, true)
+   local code, err = M.teal.compile(filename, skip_compat53)
    if err then
       return nil, err
    end
