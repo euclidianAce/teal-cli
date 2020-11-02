@@ -60,7 +60,7 @@ describe("#gen #command", function()
                "my_other_file.tl",
                "--output a_cool_name_for_a_file.lua"
             },
-            pipe_result = { nil, "exit", 1 },
+            pipe_result = util.exit_error,
          })
       end)
    end)
