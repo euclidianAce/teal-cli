@@ -1,7 +1,7 @@
 
-local ansi = require("tlcli.ansi")
 local util = require("tlcli.util")
 local log = require("tlcli.log")
+local cs = require("tlcli.ui.colorscheme")
 
 local Sandbox = {}
 
@@ -24,7 +24,7 @@ function Sandbox:get_traceback()
 
    for i, v in ipairs(stack) do
       stack[i] = v:gsub("^(%s*)(.-):(%d+)", function(ws, file, line_num)
-         return ws .. ansi.bright.yellow(file) .. ":" .. ansi.bright.magenta(line_num)
+         return ws .. cs.color("file_name", file) .. ":" .. cs.color("line_number", line_num)
       end)
    end
    return table.concat(stack, "\n")
@@ -32,17 +32,24 @@ end
 
 function Sandbox:run()
    log.debug("[%s] Executing...", tostring(self.thread))
-   log.debug(ansi.dark.green("============================="))
+   log.debug(cs.color("debug", "============================="))
    repeat
-      local ok, err = coroutine.resume(self.thread)
-      if not ok then
-         log.debug("=============================")
-         log.debug("[%s] Done (with error)", tostring(self.thread))
-         self.err = err
-         return false, err
+      local res = { coroutine.resume(self.thread) }
+      if not res[1] then
+         log.debug(cs.color("debug", "============================="))
+         log.debug("[%s] Done %s", tostring(self.thread), cs.color("error", "(with error)"))
+         self.err = res[2]
+         return false, res[2]
+      end
+      table.remove(res, 1)
+      if #res > 0 and coroutine.status(self.thread) ~= "dead" then
+         for i, v in ipairs(res) do
+            res[i] = tostring(v)
+         end
+         log.debug("Top level yield at line %s:\n   %s", cs.color("line_number", tostring(debug.getinfo(self.thread, 1, "l").currentline)), table.concat(res, "\n   "))
       end
    until coroutine.status(self.thread) == "dead"
-   log.debug(ansi.dark.green("============================="))
+   log.debug(cs.color("debug", "============================="))
    log.debug("[%s] Done", tostring(self.thread))
    return true
 end

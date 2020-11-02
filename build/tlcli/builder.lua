@@ -22,30 +22,31 @@ local function module_name_to_file_name(mod_name)
    return mod_name:gsub("%.", fs.get_path_separator()) .. ".tl"
 end
 
+local dep_query = teal_parser:query([[ (function_call
+                                                 .
+                                                 (identifier) @func_name
+                                                 .
+                                                 (arguments (string) @module_name)
+                                                 (#eq? @func_name "require")
+                                                 (#insert_mod_name! @module_name)) ]])
+
 function M.get_dependencies(file_name)
    local content, err = fs.read(file_name)
    if not content then       return nil, err end
    local tree = teal_parser:parse_string(content)
 
    local modules = {}
+   dep_query:with({
+      ["insert_mod_name!"] = function(name)
+         if name:sub(1, 1):match("[\"\']") then
+            name = name:sub(2, -2)
+         else
+            name = name:match("%[=*%[(.*)%]=*%]")
+         end
+         table.insert(modules, module_name_to_file_name(name))
+      end,
+   }):exec(tree:root())
 
-   for match in teal_parser:
-      query([[ (function_call
-                  .
-                  (identifier) @func_name
-                  .
-                  (arguments (string) @module_name)
-                  (#eq? @func_name "require")) ]]):
-      match(tree:root()) do
-
-      local name = match.captures.module_name:source()
-      if name:sub(1, 1):match("[\"\']") then
-         name = name:sub(2, -2)
-      else
-         name = name:match("%[=*%[(.*)%]=*%]")
-      end
-      table.insert(modules, module_name_to_file_name(name))
-   end
    return modules
 end
 
