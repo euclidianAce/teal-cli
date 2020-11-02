@@ -67,7 +67,6 @@ local check: Command = {
             end
          end
       else
-         -- TODO warn
          log.warn("Invalid option '%s'", tostring(opt))
       end
       return function() end

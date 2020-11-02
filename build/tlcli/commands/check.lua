@@ -67,7 +67,6 @@ comps[#comps])
             end
          end
       else
-
          log.warn("Invalid option '%s'", tostring(opt))
       end
       return function() end
