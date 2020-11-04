@@ -11,9 +11,7 @@ local Node = {}
 
 
 
-local M = {
-   Node = Node,
-}
+local M = {}
 
 local ts = require("ltreesitter")
 local teal_parser = ts.require("tree-sitter-teal-parser", "teal")
@@ -41,7 +39,7 @@ function M.get_dependencies(file_name)
          if name:sub(1, 1):match("[\"\']") then
             name = name:sub(2, -2)
          else
-            name = name:match("%[=*%[(.*)%]=*%]")
+            name = name:match("^%[=*%[(.*)%]=*%]$")
          end
          table.insert(modules, module_name_to_file_name(name))
       end,
@@ -142,6 +140,14 @@ function DAG:marked_files()
          for k, v in ipairs(nodes[i]) do
             coroutine.yield(v.file_name, v.update_reason)
          end
+      end
+   end)
+end
+
+function DAG:files()
+   return coroutine.wrap(function()
+      for k in pairs(self.nodes) do
+         coroutine.yield(k)
       end
    end)
 end
