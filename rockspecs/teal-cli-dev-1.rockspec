@@ -40,6 +40,7 @@ build = {
       ["tlcli.task"] = "build/tlcli/task.lua",
       ["tlcli.types"] = "build/tlcli/types.lua",
       ["tlcli.ui.bar"] = "build/tlcli/ui/bar.lua",
+      ["tlcli.ui.colorscheme"] = "build/tlcli/ui/colorscheme.lua",
       ["tlcli.util"] = "build/tlcli/util.lua",
    },
    install = {
@@ -58,6 +59,7 @@ build = {
          ["tlcli.task"] = "tlcli/task.tl",
          ["tlcli.types"] = "tlcli/types.tl",
          ["tlcli.ui.bar"] = "tlcli/ui/bar.tl",
+         ["tlcli.ui.colorscheme"] = "tlcli/ui/colorscheme.lua",
          ["tlcli.util"] = "tlcli/util.tl",
       },
       bin = {

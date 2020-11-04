@@ -26,7 +26,7 @@ You can add your own commands to the cli by putting a .lua file that returns a s
 
 ## Luarocks
 ```
-luarocks install --server=https://luarocks.org/dev teal-cli
+luarocks install --dev teal-cli
 ```
 
 ## Manual
