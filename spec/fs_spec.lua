@@ -138,7 +138,6 @@ describe("tlcli.fs", function()
          assert.are.equal(dir_name, found_path)
       end)
       it("should find tlcconfig.lua in a parent directory #fs #api", function()
-         require("tlcli.log").enable("debug")
          local dir_name = util.create_dir(finally, {
             "tlcconfig.lua",
             working_dir = {
@@ -152,7 +151,6 @@ describe("tlcli.fs", function()
          local found_path = fs.find_project_root()
 
          assert(lfs.chdir(cwd))
-         require("tlcli.log").disable("debug")
          assert.are.equal(dir_name, found_path, "Expected found_path to be " .. dir_name .. ", got " .. found_path)
       end)
       it("should return the current directory when there is no tlcconfig.lua #fs #api", function()
