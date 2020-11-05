@@ -70,28 +70,26 @@ local function fix_path(path)
    return table.concat(fixed_path_components, path_separator)
 end
 
+local function insert_comp(tab, comp)
+   if #comp > 0 and comp ~= "." then
+      table.insert(tab, comp)
+   end
+end
 function fs.path_concat(...)
-   local path = {}
-   for i = 1, select("#", ...) do
-      if type(select(i, ...)) == "table" then
-         for j, str in ipairs((select(i, ...))) do
+   local new_path = {}
 
-            if #str > 0 then
-               table.insert(path, str)
-            end
+   for i = 1, select("#", ...) do
+      local c = select(i, ...)
+      if type(c) == "table" then
+         for _, v in ipairs(c) do
+            insert_comp(new_path, v)
          end
       else
-         local raw_fname = select(i, ...)
-         if i > 1 and string.sub(raw_fname, 1, 1) == "/" then
-            error("Attempt to concatenate non relative paths")
-         end
-
-         if #raw_fname > 0 then
-            table.insert(path, raw_fname)
-         end
+         insert_comp(new_path, c)
       end
    end
-   return table.concat(path, path_separator)
+
+   return table.concat(new_path, path_separator)
 end
 
 
@@ -287,6 +285,8 @@ function fs.get_output_file_name(filename)
       return filename:sub(1, -4) .. "out.lua"
    elseif ext == "tl" then
       return filename:sub(1, -3) .. "lua"
+   elseif ext == "d.tl" then
+      return filename:sub(1, -5) .. "out.d.tl"
    elseif ext == "c" then
       return filename:sub(1, -2) .. "o"
    end
@@ -303,16 +303,26 @@ function fs.is_absolute(path)
 end
 
 local USER_HOME = os.getenv("HOME")
-function fs.is_in_dir(dirname, filename)
-   local dir_comps = fs.get_path_components(dirname)
-   local file_comps = fs.get_path_components(filename)
-   while file_comps[1] == dir_comps[1] do
+function fs.is_in_dir(dir_name, file_name)
+   if not lfs.attributes(dir_name) then
+      return false
+   end
+   local dir_comps = fs.get_path_components(dir_name)
+   local file_comps = fs.get_path_components(file_name)
+   if #dir_comps >= #file_comps then
+      return false
+   end
+   while #dir_comps > 0 do
+      if file_comps[1] ~= dir_comps[1] then
+         return false
+      end
       table.remove(file_comps, 1)
       table.remove(dir_comps, 1)
    end
-   filename = fs.path_concat(file_comps)
-   for file in lfs.dir(dirname) do
-      if file == filename then
+
+   file_name = fs.path_concat(file_comps)
+   for file in lfs.dir(dir_name) do
+      if file == file_name then
          return true
       end
    end
@@ -327,26 +337,19 @@ local root_file = "tlcconfig.lua"
 function fs.ROOT_FILE()    return root_file end
 function fs.find_project_root()
    local orig_dir = lfs.currentdir()
+   local dir_comps = fs.get_path_components(orig_dir)
 
+   while #dir_comps > 1 do
 
-
-
-   local has_local_config = fs.is_in_dir(orig_dir, root_file)
-   local found_home = false
-   while not has_local_config do
-      if lfs.currentdir() == USER_HOME or lfs.currentdir() == "/" then
-         found_home = true
-         break
+      for file in lfs.dir("/" .. fs.path_concat(dir_comps)) do
+         if file == root_file then
+            return "/" .. fs.path_concat(dir_comps)
+         end
       end
-      lfs.chdir("..")
-      has_local_config = fs.is_in_dir(lfs.currentdir(), root_file)
+      table.remove(dir_comps)
    end
-   local root_dir
-   if not found_home then
-      root_dir = lfs.currentdir()
-   end
-   lfs.chdir(orig_dir)
-   return root_dir or orig_dir
+
+   return orig_dir
 end
 
 local file_content_cache = setmetatable({}, { __mode = "kv" })

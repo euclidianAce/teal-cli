@@ -57,6 +57,9 @@ function M.scan_project(root_dir, include_patts, exclude_patts)
 include_patts or {},
 exclude_patts or {}) do
 
+      if fname:sub(1, 2) == "." .. fs.get_path_separator() then
+         fname = fname:sub(3, -1)
+      end
       deps[fs.path_concat(root_dir, fname)] = M.get_dependencies(fname)
    end
    assert(lfs.chdir(current_dir))

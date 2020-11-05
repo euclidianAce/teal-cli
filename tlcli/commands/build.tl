@@ -174,7 +174,13 @@ local build: Command = {
       local output_file_names: {string:string} = {}
       local function get_output_file_name(file_name: string): string
          if output_file_names[file_name] then return output_file_names[file_name] end
-         local result = fs.get_output_file_name(file_name)
+         local ext = fs.get_extension(file_name)
+         local result: string
+         if ext == "lua" or ext == "d.tl" then
+            result = file_name
+         else
+            result = fs.get_output_file_name(file_name)
+         end
 
          if src_dir ~= "." then
             result = result:sub(#src_dir + 2, -1)
@@ -190,19 +196,31 @@ local build: Command = {
       -- staged will make everything get type checked first, round-robin just lets stuff happen
       local scheduler = task.scheduler(flags.keep_going and "round-robin" or "staged")
 
-      local update_so = false
       local exit = 0
       local total_steps = 0
       local fatal_err: string
 
       local dag = builder.build_dag(src_dir, options.include, options.exclude, function(file_name: string): string
+         log.debug("Checking file: %s", file_name)
+         if build_dir ~= "." and fs.is_in_dir(build_dir, file_name) then
+            log.debug("   %s is in build dir %s", file_name, build_dir)
+            return nil
+         end
+         if file_name == "tlcconfig.lua" then return nil end
+         log.debug("Checking file: %s", file_name)
          local ext <const> = fs.get_extension(file_name)
-         if ext == "d.tl" or ext == "lua" then return nil end
+         if (ext == "d.tl" or ext == "lua")
+            and src_dir == build_dir
+         then
+            log.debug("   Only type checking")
+            return "No target, just type check"
+         end
          local out_file = get_output_file_name(file_name)
+         log.debug("   Checking if source %s is newer than %s", file_name, out_file)
          return is_source_newer(file_name, out_file)
       end)
+
       for input_file, reason in dag:marked_files() do
-         log.verbose("Compiling: %s\n   Reason: %s", cs.color("file_name", input_file), cs.color("debug", reason))
          local output_file <const> = get_output_file_name(input_file)
          scheduler.wrap(function()
             check_parents(output_file)
@@ -210,6 +228,8 @@ local build: Command = {
          local disp_file = cs.color("file_name", input_file)
          local disp_output_file = cs.color("file_name", output_file)
          scheduler.wrap(function()
+            log.verbose("Processing: %s\n   Reason: %s", disp_file, cs.color("debug", reason))
+
             coroutine.yield()
 
             draw_progress("Type checking", disp_file)
@@ -230,20 +250,22 @@ local build: Command = {
                return
             end
 
-            local ext <const> = fs.get_extension(input_file)
-            if ext == "lua" or ext == "d.tl" then
-               log.normal("Type checked: %s", disp_file)
-               b:step()
-               return
-            end
-
             coroutine.yield()
+
+            b:step()
             if not args["pretend"] then
-               local fh = assert(io.open(output_file, "w"))
-               draw_progress("Writing", disp_output_file)
-               local ok = fh:write(util.teal.pretty_print_ast(res.ast as table), "\n")
-               assert(fh:close())
-               log.normal("Wrote %s", disp_output_file)
+               local ext <const> = fs.get_extension(input_file)
+               draw_progress("Writing %s", disp_output_file)
+               if ext == "tl"
+                  or ((ext == "lua" or ext == "d.tl") and build_dir ~= src_dir)
+               then
+                  local fh = assert(io.open(output_file, "w"))
+                  fh:write(util.teal.pretty_print_ast(res.ast as table), "\n")
+                  assert(fh:close())
+                  log.normal("Wrote %s", disp_output_file)
+               else
+                  log.normal("Type checked %s", input_file)
+               end
             else
                log.normal("Would write %s", disp_output_file)
             end

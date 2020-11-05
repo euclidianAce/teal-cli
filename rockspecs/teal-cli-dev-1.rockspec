@@ -59,7 +59,7 @@ build = {
          ["tlcli.task"] = "tlcli/task.tl",
          ["tlcli.types"] = "tlcli/types.tl",
          ["tlcli.ui.bar"] = "tlcli/ui/bar.tl",
-         ["tlcli.ui.colorscheme"] = "tlcli/ui/colorscheme.lua",
+         ["tlcli.ui.colorscheme"] = "tlcli/ui/colorscheme.tl",
          ["tlcli.util"] = "tlcli/util.tl",
       },
       bin = {
