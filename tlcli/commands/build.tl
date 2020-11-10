@@ -74,7 +74,7 @@ local build: Command = {
       local obj_dir: string = options.object_dir as string
 
       do
-         local attrs, reason = lfs.attributes(src_dir)
+         local attrs, reason = lfs.attributes(src_dir) as (any, string)
          if not attrs then
             log.error("Unable to access source dir \"%s\"\nReason: %s", src_dir, reason)
             return 1
@@ -196,6 +196,8 @@ local build: Command = {
       -- staged will make everything get type checked first, round-robin just lets stuff happen
       local scheduler = task.scheduler(flags.keep_going and "round-robin" or "staged")
 
+      log.debug("package.path: %s", package.path:gsub(";", "\n   "))
+
       local exit = 0
       local total_steps = 0
       local fatal_err: string
@@ -284,7 +286,6 @@ local build: Command = {
       io.write("\n")
 
       scheduler.run()
-      -- c_mod_scheduler.run()
 
       ansi.cursor.up(1)
       ansi.cursor.set_column(0)

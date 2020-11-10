@@ -196,6 +196,8 @@ fs.is_absolute(obj_dir),
 
       local scheduler = task.scheduler(flags.keep_going and "round-robin" or "staged")
 
+      log.debug("package.path: %s", package.path:gsub(";", "\n   "))
+
       local exit = 0
       local total_steps = 0
       local fatal_err
@@ -284,7 +286,6 @@ fs.is_absolute(obj_dir),
       io.write("\n")
 
       scheduler.run()
-
 
       ansi.cursor.up(1)
       ansi.cursor.set_column(0)

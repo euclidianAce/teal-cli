@@ -65,7 +65,9 @@ end
 
 function M.flush()
    for _, m in ipairs(queue) do
-      raw_log(m.level, m.message)
+      if enabled[m.level] then
+         raw_log(m.level, m.message)
+      end
    end
    queue = {}
 end

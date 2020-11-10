@@ -316,12 +316,13 @@ local old_tl_search_module = tl.search_module
 
 local module_name_map = {}
 
+local special_chars = "[%^%$%(%)%%%.%[%]%*%+%-%?]"
 local function make_hijacked_search_module(require_prefix, actual_name)
    return function(module_name)
       local found
       local tried = {}
 
-      local altered_module_name = module_name:gsub("^" .. require_prefix, actual_name)
+      local altered_module_name = module_name:gsub("^" .. require_prefix:gsub(special_chars, "%%%1"), actual_name)
       log.queue("debug", [[Attempting to load module with modified name
       expected prefix:  %s
    replacement prefix:  %s
