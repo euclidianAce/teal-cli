@@ -158,6 +158,15 @@ local valid_commands = {
    ["gen"] = true,
 }
 
+function M.run_command(cmd_name, ...)
+   assert(valid_commands[cmd_name], "invalid command '" .. tostring(cmd_name) .. "'")
+   local pd = io.popen("tlc " .. cmd_name .. " " .. table.concat({...}, " ") .. " 2>&1")
+   local pipe_result = {}
+   pipe_result.output = pd:read("*a")
+   pipe_result.close = {pd:close()}
+   return pipe_result
+end
+
 function M.run_mock_project(finally, t)
    typecheck(finally, "function")
    typecheck(t, "table")

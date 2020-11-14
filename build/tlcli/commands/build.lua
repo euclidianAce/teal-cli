@@ -270,7 +270,7 @@ fs.is_absolute(obj_dir),
                   ((ext == "lua" or ext == "d.tl") and build_dir ~= src_dir) then
 
                   local fh = assert(io.open(output_file, "w"))
-                  fh:write(util.teal.pretty_print_ast(res.ast), "\n")
+                  fh:write(tl.pretty_print_ast(res.ast), "\n")
                   assert(fh:close())
                   log.normal("Wrote %s", disp_output_file)
                else

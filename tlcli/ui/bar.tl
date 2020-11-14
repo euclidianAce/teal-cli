@@ -74,6 +74,7 @@ local defaults: {string:number|string|boolean} = {
 }
 
 return {
+   Bar = Bar,
    new = function(settings: {string:number|string|boolean}): Bar
       settings = settings or {}
       local new_bar: {string:any} = {

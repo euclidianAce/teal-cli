@@ -20,6 +20,7 @@ local function module_name_to_file_name(mod_name: string): string
    return mod_name:gsub("%.", fs.get_path_separator()) .. ".tl"
 end
 
+-- TODO: Dependency graph breaks with project "module" {} config option
 local dep_query <const> = teal_parser:query[[ (function_call
                                                  .
                                                  (identifier) @func_name

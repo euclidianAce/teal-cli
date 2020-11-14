@@ -20,6 +20,7 @@ local function module_name_to_file_name(mod_name)
    return mod_name:gsub("%.", fs.get_path_separator()) .. ".tl"
 end
 
+
 local dep_query = teal_parser:query([[ (function_call
                                                  .
                                                  (identifier) @func_name

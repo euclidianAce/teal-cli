@@ -155,14 +155,7 @@ function M.check_hooks()
    return errs
 end
 
-local TealError = {}
-
-
-
-
-
-
-local function concat_errors(errs)
+function M.concat_errors(errs)
    local msgs = {}
    for i, err in ipairs(errs) do
       table.insert(
@@ -177,6 +170,7 @@ err.filename, err.y, err.x, err.msg or ""))
    end
    return table.concat(msgs, "\n")
 end
+local concat_errors = M.concat_errors
 
 local fstr = "Attempt to %s protected table <%s>\n   with key \"%s\" %s%s"
 function M.protected_proxy(t, err_handler)
@@ -223,10 +217,9 @@ function M.teal.add_module(name)
    table.insert(tl_modules, name)
 end
 
-
 function M.teal.type_check_file(file_name)
    teal_setup_env(false)
-   local result, err = (tl.process)(file_name, tl_env, nil, tl_modules)
+   local result, err = tl.process(file_name, tl_env, nil, tl_modules)
    if err then
       return nil, err
    end
@@ -285,29 +278,15 @@ function M.teal.compile_and_write(input_filename, type_check, output_filename)
    return true
 end
 
-local proc_str = tl.process_string
-function M.teal.process(input_file_name, file_content, type_check)
+function M.teal.process(input_file_name, file_content)
    teal_setup_env(false)
-   local result, err = proc_str(file_content, false, tl_env, nil, tl_modules, input_file_name)
+   local result, err = tl.process_string(file_content, false, tl_env, nil, tl_modules, input_file_name)
    if err then
       return nil, err
    end
    tl_env = result.env
 
-   if #result.syntax_errors > 0 then
-      return nil, concat_errors(result.syntax_errors)
-   end
-   if type_check then
-      if #result.type_errors > 0 then
-         return nil, concat_errors(result.type_errors)
-      end
-   end
    return result
-end
-
-
-function M.teal.pretty_print_ast(result)
-   return (tl.pretty_print_ast)(result)
 end
 
 

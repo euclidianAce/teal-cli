@@ -155,14 +155,7 @@ function M.check_hooks(): {string}
    return errs
 end
 
-local record TealError
-   x: number
-   y: number
-   filename: string
-   msg: string
-end
-
-local function concat_errors(errs: {TealError}): string
+function M.concat_errors(errs: {tl.Error}): string
    local msgs = {}
    for i, err in ipairs(errs) do
        table.insert(
@@ -177,6 +170,7 @@ local function concat_errors(errs: {TealError}): string
    end
    return table.concat(msgs, "\n")
 end
+local concat_errors = M.concat_errors
 
 local fstr <const> = "Attempt to %s protected table <%s>\n   with key \"%s\" %s%s"
 function M.protected_proxy<T>(t: T, err_handler: function(string)): T
@@ -205,13 +199,13 @@ function M.protected_proxy<T>(t: T, err_handler: function(string)): T
    }) as T
 end
 
-local tl_env: table
+local tl_env: tl.Env
 local tl_modules: {string} = {}
 local skip_compat53 = false
 
-local function teal_setup_env(lax: boolean): table
+local function teal_setup_env(lax: boolean)
    if not tl_env then
-      tl_env = tl.init_env(lax, skip_compat53) as table
+      tl_env = tl.init_env(lax, skip_compat53)
    end
 end
 
@@ -223,20 +217,19 @@ function M.teal.add_module(name: string)
    table.insert(tl_modules, name)
 end
 
--- TODO: use tl.Result once it's exposed
 function M.teal.type_check_file(file_name: string): boolean, string
    teal_setup_env(false)
-   local result, err = (tl.process as function(string, table, any, table): table, string)(file_name, tl_env, nil, tl_modules)
+   local result, err = tl.process(file_name, tl_env, nil, tl_modules)
    if err then
       return nil, err
    end
-   tl_env = result.env as table
+   tl_env = result.env
 
-   if #result.syntax_errors as table > 0 then
-      return nil, concat_errors(result.syntax_errors as {TealError})
+   if #result.syntax_errors > 0 then
+      return nil, concat_errors(result.syntax_errors)
    end
-   if #result.type_errors as table > 0 then
-      return nil, concat_errors(result.type_errors as {TealError})
+   if #result.type_errors > 0 then
+      return nil, concat_errors(result.type_errors)
    end
    return true
 end
@@ -245,11 +238,11 @@ function M.teal.compile(filename: string, type_check: boolean): string, string
    local lax = filename:match("%.lua$")
    local result = assert(tl.process(filename))
    if #result.syntax_errors > 0 then
-      return nil, concat_errors(result.syntax_errors as {TealError})
+      return nil, concat_errors(result.syntax_errors)
    end
    if type_check then
       if #result.type_errors > 0 then
-         return nil, concat_errors(result.type_errors as {TealError})
+         return nil, concat_errors(result.type_errors)
       end
    end
    return tl.pretty_print_ast(result.ast)
@@ -285,29 +278,15 @@ function M.teal.compile_and_write(input_filename: string, type_check: boolean, o
    return true
 end
 
-local proc_str = tl.process_string as function(string, boolean, table, table, table, string): (table, string)
-function M.teal.process(input_file_name: string, file_content: string, type_check: boolean): table, string
+function M.teal.process(input_file_name: string, file_content: string): tl.Result, string
    teal_setup_env(false)
-   local result, err = proc_str(file_content, false, tl_env, nil, tl_modules, input_file_name)
+   local result, err = tl.process_string(file_content, false, tl_env, nil, tl_modules, input_file_name)
    if err then
       return nil, err
    end
-   tl_env = result.env as table
+   tl_env = result.env
 
-   if #result.syntax_errors as table > 0 then
-      return nil, concat_errors(result.syntax_errors as {TealError})
-   end
-   if type_check then
-      if #result.type_errors as table > 0 then
-         return nil, concat_errors(result.type_errors as {TealError})
-      end
-   end
-   return result as table
-end
-
--- TODO: remove once teal exposes its types
-function M.teal.pretty_print_ast(result: table): string
-   return (tl.pretty_print_ast as function(table): string)(result)
+   return result
 end
 
 -- 1337H4XX0R: Horrible awful evil hack

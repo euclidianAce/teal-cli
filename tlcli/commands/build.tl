@@ -242,21 +242,21 @@ local build: Command = {
                end
                return
             end
-            if #res.syntax_errors as table > 0 then
+            if #res.syntax_errors > 0 then
                exit = 1
-               log.error(util.concat_errors(res.syntax_errors as table))
+               log.error(util.concat_errors(res.syntax_errors))
                if not flags.keep_going then
                   fatal_err = err
                end
                return
             end
             if (ext == "tl" or ext == "d.tl")
-               and #res.type_errors as table > 0 then
+               and #res.type_errors > 0 then
                exit = 1
                if not flags.keep_going then
                   fatal_err = err
                end
-               log.error(util.concat_errors(res.type_errors as table))
+               log.error(util.concat_errors(res.type_errors))
                return
             end
 
@@ -270,7 +270,7 @@ local build: Command = {
                   or ((ext == "lua" or ext == "d.tl") and build_dir ~= src_dir)
                then
                   local fh = assert(io.open(output_file, "w"))
-                  fh:write(util.teal.pretty_print_ast(res.ast as table), "\n")
+                  fh:write(tl.pretty_print_ast(res.ast), "\n")
                   assert(fh:close())
                   log.normal("Wrote %s", disp_output_file)
                else

@@ -1,5 +1,7 @@
 
+local assert = require("luassert")
 local util = require("spec.util")
+local lfs = require("lfs")
 
 local proj = util.run_mock_project
 
@@ -133,8 +135,40 @@ describe("#build #command", function()
                   "bar.lua",
                },
             },
-
          })
+      end)
+      it("#blah should correctly resolve dependencies for incremental rebuilds", function()
+         local current_dir = lfs.currentdir()
+         local dir_name = util.create_dir(finally, {
+            src = {
+               ["foo.tl"] = [[ require("my_module.bar") ]],
+               ["bar.tl"] = [[ return {} ]],
+            },
+            ["tlcconfig.lua"] = [[
+            build "options" {
+               source_dir = "src",
+               build_dir = "build",
+            }
+            project "module" {
+               source = "src",
+               name = "my_module"
+            }
+            ]],
+         })
+         assert(lfs.chdir(dir_name))
+         local first_result = util.run_command("build", "--no-bar")
+         -- TODO: do this in a more portable way
+         os.execute("touch src/bar.tl")
+         local second_result = util.run_command("build", "--no-bar")
+         assert(lfs.chdir(current_dir))
+         -- print(require("inspect")(first_result))
+         -- print(require("inspect")(second_result))
+
+         -- TODO: i think luassert has assert.match?
+         assert(first_result.output:match("build[\\/]foo.lua"))
+         assert(first_result.output:match("build[\\/]bar.lua"))
+         assert(second_result.output:match("build[\\/]foo.lua"), "foo.tl did not get recompiled")
+         assert(second_result.output:match("build[\\/]bar.lua"), "bar.tl did not get recompiled")
       end)
    end)
    pending("cmodule config", function()

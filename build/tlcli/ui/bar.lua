@@ -74,6 +74,7 @@ local defaults = {
 }
 
 return {
+   Bar = Bar,
    new = function(settings)
       settings = settings or {}
       local new_bar = {
