@@ -30,31 +30,15 @@ local flags = util.protected_proxy({
    keep_going = false,
 })
 
-local CModule = {}
-
-
-
-
-
-
-local c_modules = {}
-
-local function should_recompile_c_module(mod)
-   for k, v in pairs(mod.source) do
-      if v then
-         return true
-      end
-   end
-   return false
-end
-
 local build = {
    name = "build",
    description = "Build an entire Teal project based on the specifications in tlcconfig.lua.",
    argparse = function(cmd)
       cmd:option("-p --pretend --dry-run", "Don't write to any files, type check and print what would be written to."):
       args(0)
-      cmd:option("-u --update-all", "Compile each source file as if it has been edited"):
+      cmd:option("-u --update-all", "Compile each source file as if it has been edited."):
+      args(0)
+      cmd:option("--no-bar", "Disable the fancy progress bar."):
       args(0)
    end,
 
@@ -136,22 +120,30 @@ fs.is_absolute(obj_dir),
       end
 
 
-      local p = io.popen("stty size")
-      local columns = math.floor(tonumber(p:read("*a"):match("%d+ (%d+)")) / 2.5)
-      p:close()
+      local b
+      if not args.no_bar then
+         local p = io.popen("stty size")
+         local columns = math.floor(tonumber(p:read("*a"):match("%d+ (%d+)")) / 2.5)
+         p:close()
 
-      local b = bar.new({
-         length = columns,
-         show_progress = true,
-      })
+         b = bar.new({
+            length = columns,
+            show_progress = true,
+         })
+      end
 
       local function draw_progress(step, fname)
-         ansi.cursor.up(1)
-         ansi.clear_line(2)
-         ansi.cursor.set_column(0)
+         if b then
+            ansi.cursor.up(1)
+            ansi.clear_line(2)
+            ansi.cursor.set_column(0)
 
-         io.stdout:write(step, ": ", fname, "\n")
-         b:draw(io.stdout)
+            io.stdout:write(step, ": ", fname, "\n")
+            b:draw(io.stdout)
+         end
+      end
+      local function step()
+         if b then             b:step() end
       end
 
 
@@ -196,8 +188,6 @@ fs.is_absolute(obj_dir),
 
       local scheduler = task.scheduler(flags.keep_going and "round-robin" or "staged")
 
-      log.debug("package.path: %s", package.path:gsub(";", "\n   "))
-
       local exit = 0
       local total_steps = 0
       local fatal_err
@@ -224,6 +214,7 @@ fs.is_absolute(obj_dir),
 
       for input_file, reason in dag:marked_files() do
          local output_file = get_output_file_name(input_file)
+         local ext = fs.get_extension(input_file)
          scheduler.wrap(function()
             check_parents(output_file)
          end)
@@ -236,28 +227,45 @@ fs.is_absolute(obj_dir),
 
             draw_progress("Type checking", disp_file)
 
-            local res, err = util.teal.process(input_file, fs.read(input_file), true)
+            local res, err = util.teal.process(input_file, (fs.read(input_file)))
 
-            b:step()
+            step()
             if err then
                exit = 1
                local start, finish = err:lower():find("^%s*error:?%s*")
                if finish then
                   err = err:sub(finish + 1, -1)
                end
-               log.error(err)
+               log.error("Error in processing %s: %s", disp_file, err)
                if not flags.keep_going then
                   fatal_err = err
                end
                return
             end
+            if #res.syntax_errors > 0 then
+               exit = 1
+               log.error(util.concat_errors(res.syntax_errors))
+               if not flags.keep_going then
+                  fatal_err = err
+               end
+               return
+            end
+            if (ext == "tl" or ext == "d.tl") and
+               #res.type_errors > 0 then
+               exit = 1
+               if not flags.keep_going then
+                  fatal_err = err
+               end
+               log.error(util.concat_errors(res.type_errors))
+               return
+            end
 
             coroutine.yield()
 
-            b:step()
+            step()
             if not args["pretend"] then
                local ext = fs.get_extension(input_file)
-               draw_progress("Writing %s", disp_output_file)
+               draw_progress("Writing ", disp_output_file)
                if ext == "tl" or
                   ((ext == "lua" or ext == "d.tl") and build_dir ~= src_dir) then
 
@@ -271,7 +279,7 @@ fs.is_absolute(obj_dir),
             else
                log.normal("Would write %s", disp_output_file)
             end
-            b:step()
+            step()
          end)
          total_steps = total_steps + 2
       end
@@ -281,23 +289,26 @@ fs.is_absolute(obj_dir),
          return 0
       end
 
-      b:set_total_steps(total_steps)
-
-      io.write("\n")
+      if b then
+         b:set_total_steps(total_steps)
+         io.write("\n")
+      end
 
       scheduler.run()
 
-      ansi.cursor.up(1)
-      ansi.cursor.set_column(0)
-      ansi.clear_line(2)
-      ansi.cursor.down(1)
-      ansi.cursor.set_column(0)
-      ansi.clear_line(2)
-      ansi.cursor.up(1)
-      ansi.cursor.set_column(0)
-      io.flush()
+      if b then
+         ansi.cursor.up(1)
+         ansi.cursor.set_column(0)
+         ansi.clear_line(2)
+         ansi.cursor.down(1)
+         ansi.cursor.set_column(0)
+         ansi.clear_line(2)
+         ansi.cursor.up(1)
+         ansi.cursor.set_column(0)
+         io.flush()
 
-      log.debug("Bar finished with %d/%d progress", b.steps, b.total_steps)
+         log.debug("Bar finished with %d/%d progress", b.steps, b.total_steps)
+      end
 
       log.flush()
 

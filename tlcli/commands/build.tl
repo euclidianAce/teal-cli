@@ -30,31 +30,15 @@ local flags: {string:boolean} = util.protected_proxy{
    keep_going = false,
 }
 
-local record CModule
-   include: {string}
-   exclude: {string}
-   source: {string:boolean} -- set of files that were updated to check if recompilation of the whole module is needed
-   o_files: {string}
-end
-
-local c_modules: {string:CModule} = {}
-
-local function should_recompile_c_module(mod: CModule): boolean
-   for k, v in pairs(mod.source) do
-      if v then
-         return true
-      end
-   end
-   return false
-end
-
 local build: Command = {
    name = "build",
    description = "Build an entire Teal project based on the specifications in tlcconfig.lua.",
    argparse = function(cmd: ArgparseParser.Command)
       cmd:option("-p --pretend --dry-run", "Don't write to any files, type check and print what would be written to.")
          :args(0)
-      cmd:option("-u --update-all", "Compile each source file as if it has been edited")
+      cmd:option("-u --update-all", "Compile each source file as if it has been edited.")
+         :args(0)
+      cmd:option("--no-bar", "Disable the fancy progress bar.")
          :args(0)
    end,
 
@@ -136,22 +120,30 @@ local build: Command = {
       end
       -- }}}
       -- {{{ Setup Progress Bar
-      local p = io.popen("stty size") --TODO: this isn't super portable, and the progress bar should be toggleable
-      local columns = math.floor(tonumber(p:read("*a"):match("%d+ (%d+)")) / 2.5)
-      p:close()
+      local b: bar.Bar
+      if not args.no_bar then
+         local p = io.popen("stty size") --TODO: this isn't super portable
+         local columns = math.floor(tonumber(p:read("*a"):match("%d+ (%d+)")) / 2.5)
+         p:close()
 
-      local b = bar.new{
-         length = columns,
-         show_progress = true,
-      }
+         b = bar.new{
+            length = columns,
+            show_progress = true,
+         }
+      end
 
       local function draw_progress(step: string, fname: string)
-         ansi.cursor.up(1)
-         ansi.clear_line(2)
-         ansi.cursor.set_column(0)
+         if b then
+            ansi.cursor.up(1)
+            ansi.clear_line(2)
+            ansi.cursor.set_column(0)
 
-         io.stdout:write(step, ": ", fname, "\n")
-         b:draw(io.stdout)
+            io.stdout:write(step, ": ", fname, "\n")
+            b:draw(io.stdout)
+         end
+      end
+      local function step()
+         if b then b:step() end
       end
       -- }}}
 
@@ -196,8 +188,6 @@ local build: Command = {
       -- staged will make everything get type checked first, round-robin just lets stuff happen
       local scheduler = task.scheduler(flags.keep_going and "round-robin" or "staged")
 
-      log.debug("package.path: %s", package.path:gsub(";", "\n   "))
-
       local exit = 0
       local total_steps = 0
       local fatal_err: string
@@ -224,6 +214,7 @@ local build: Command = {
 
       for input_file, reason in dag:marked_files() do
          local output_file <const> = get_output_file_name(input_file)
+         local ext <const> = fs.get_extension(input_file)
          scheduler.wrap(function()
             check_parents(output_file)
          end)
@@ -236,28 +227,45 @@ local build: Command = {
 
             draw_progress("Type checking", disp_file)
 
-            local res, err = util.teal.process(input_file, fs.read(input_file), true)
+            local res, err = util.teal.process(input_file, (fs.read(input_file)))
 
-            b:step()
+            step()
             if err then
                exit = 1
                local start, finish = err:lower():find("^%s*error:?%s*")
                if finish then
                   err = err:sub(finish+1, -1)
                end
-               log.error(err)
+               log.error("Error in processing %s: %s", disp_file, err)
                if not flags.keep_going then
                   fatal_err = err
                end
                return
             end
+            if #res.syntax_errors as table > 0 then
+               exit = 1
+               log.error(util.concat_errors(res.syntax_errors as table))
+               if not flags.keep_going then
+                  fatal_err = err
+               end
+               return
+            end
+            if (ext == "tl" or ext == "d.tl")
+               and #res.type_errors as table > 0 then
+               exit = 1
+               if not flags.keep_going then
+                  fatal_err = err
+               end
+               log.error(util.concat_errors(res.type_errors as table))
+               return
+            end
 
             coroutine.yield()
 
-            b:step()
+            step()
             if not args["pretend"] then
                local ext <const> = fs.get_extension(input_file)
-               draw_progress("Writing %s", disp_output_file)
+               draw_progress("Writing ", disp_output_file)
                if ext == "tl"
                   or ((ext == "lua" or ext == "d.tl") and build_dir ~= src_dir)
                then
@@ -271,7 +279,7 @@ local build: Command = {
             else
                log.normal("Would write %s", disp_output_file)
             end
-            b:step()
+            step()
          end)
          total_steps = total_steps + 2
       end
@@ -281,23 +289,26 @@ local build: Command = {
          return 0
       end
 
-      b:set_total_steps(total_steps)
-
-      io.write("\n")
+      if b then
+         b:set_total_steps(total_steps)
+         io.write("\n")
+      end
 
       scheduler.run()
 
-      ansi.cursor.up(1)
-      ansi.cursor.set_column(0)
-      ansi.clear_line(2)
-      ansi.cursor.down(1)
-      ansi.cursor.set_column(0)
-      ansi.clear_line(2)
-      ansi.cursor.up(1)
-      ansi.cursor.set_column(0)
-      io.flush()
+      if b then
+         ansi.cursor.up(1)
+         ansi.cursor.set_column(0)
+         ansi.clear_line(2)
+         ansi.cursor.down(1)
+         ansi.cursor.set_column(0)
+         ansi.clear_line(2)
+         ansi.cursor.up(1)
+         ansi.cursor.set_column(0)
+         io.flush()
 
-      log.debug("Bar finished with %d/%d progress", b.steps, b.total_steps)
+         log.debug("Bar finished with %d/%d progress", b.steps, b.total_steps)
+      end
 
       log.flush()
 
