@@ -303,12 +303,9 @@ local function make_hijacked_search_module(require_prefix, actual_name)
 
       local altered_module_name = module_name:gsub("^" .. require_prefix:gsub(special_chars, "%%%1"), actual_name)
       log.queue("debug", [[Attempting to load module with modified name
-      expected prefix:  %s
-   replacement prefix:  %s
-
-      module required:  %s
-         altered name:  %s
-      ]], require_prefix, actual_name, module_name, altered_module_name)
+   expected prefix:  '%s'	replacement prefix:  '%s'
+   module required:  '%s'	      altered name:  '%s']],
+require_prefix, actual_name, module_name, altered_module_name)
       local found, fd, tried = old_tl_search_module(altered_module_name, true)
       if found then
          return found, fd

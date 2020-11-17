@@ -5,3 +5,4 @@ tmp
 /.luarocks
 *.so
 tree-sitter-teal/src/*.o
+scratch.tl

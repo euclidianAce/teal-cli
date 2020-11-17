@@ -210,7 +210,7 @@ fs.is_absolute(obj_dir),
          local out_file = get_output_file_name(file_name)
          log.debug("   Checking if source %s is newer than %s", file_name, out_file)
          return is_source_newer(file_name, out_file)
-      end)
+      end, { global_options.module })
 
       for input_file, reason in dag:marked_files() do
          local output_file = get_output_file_name(input_file)
@@ -221,7 +221,7 @@ fs.is_absolute(obj_dir),
          local disp_file = cs.color("file_name", input_file)
          local disp_output_file = cs.color("file_name", output_file)
          scheduler.wrap(function()
-            log.verbose("Processing: %s\n   Reason: %s", disp_file, cs.color("debug", reason))
+            log.verbose("Processing: %s\n    Reason: %s", disp_file, cs.color("debug", reason))
 
             coroutine.yield()
 

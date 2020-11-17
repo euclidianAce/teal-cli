@@ -3,6 +3,7 @@ local lfs = require("lfs")
 local assert = require("luassert")
 
 local current_dir = assert(lfs.currentdir())
+local tlc_exe = current_dir .. "/bin/tlc"
 
 local M = {}
 
@@ -160,7 +161,7 @@ local valid_commands = {
 
 function M.run_command(cmd_name, ...)
    assert(valid_commands[cmd_name], "invalid command '" .. tostring(cmd_name) .. "'")
-   local pd = io.popen("tlc " .. cmd_name .. " " .. table.concat({...}, " ") .. " 2>&1")
+   local pd = io.popen(tlc_exe .. " " .. cmd_name .. " " .. table.concat({...}, " ") .. " 2>&1")
    local pipe_result = {}
    pipe_result.output = pd:read("*a")
    pipe_result.close = {pd:close()}
@@ -189,7 +190,7 @@ function M.run_mock_project(finally, t)
    populate_dir(name, t.dir)
    lfs.chdir(name)
 
-   local pd = io.popen("tlc " .. t.command .. (t.args and " " .. table.concat(t.args, " ") or "") .. " 2>&1")
+   local pd = io.popen(tlc_exe .. " " .. t.command .. (t.args and " " .. table.concat(t.args, " ") or "") .. " 2>&1")
    local actual_output = pd:read("*a")
    local actual_pipe_result = {pd:close()}
 
@@ -200,7 +201,7 @@ function M.run_mock_project(finally, t)
    lfs.chdir(current_dir)
 
    if t.output_match then
-      assert.truthy(string.match(actual_output, t.output_match), "Output (" .. actual_output .. ") didn't match expected pattern: " .. t.output_match)
+      assert.truthy(string.match(actual_output, t.output_match), "Output [[" .. actual_output .. "]] didn't match expected pattern: " .. t.output_match)
    elseif t.output then
       assert.are.equal(t.output, actual_output, "Output is not as expected")
    end

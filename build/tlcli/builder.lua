@@ -11,8 +11,6 @@ local Node = {}
 
 
 
-local M = {}
-
 local ts = require("ltreesitter")
 local teal_parser = ts.require("tree-sitter-teal-parser", "teal")
 
@@ -29,7 +27,29 @@ local dep_query = teal_parser:query([[ (function_call
                                                  (#eq? @func_name "require")
                                                  (#insert_mod_name! @module_name)) ]])
 
-function M.get_dependencies(file_name)
+local ModuleReplacement = {}
+
+
+
+
+local M = {
+   Node = Node,
+   ModuleReplacement = ModuleReplacement,
+}
+
+local special_chars = "[%^%$%(%)%%%.%[%]%*%+%-%?]"
+function M.replace_require_prefix(prefix, replacement, require_str)
+   local str, num_replacements = require_str:gsub("^" .. prefix:gsub(special_chars, "%%%1"), replacement)
+   if num_replacements == 0 then
+      return nil
+   end
+   return str
+end
+
+function M.get_dependencies(
+file_name,
+rename_modules)
+
    local content, err = fs.read(file_name)
    if not content then       return nil, err end
    local tree = teal_parser:parse_string(content)
@@ -42,6 +62,15 @@ function M.get_dependencies(file_name)
          else
             name = name:match("^%[=*%[(.*)%]=*%]$")
          end
+         if rename_modules then
+            for i, mod in ipairs(rename_modules) do
+               local new_req = M.replace_require_prefix(mod.name, mod.source, name)
+               if new_req then
+                  table.insert(modules, module_name_to_file_name(new_req))
+                  return
+               end
+            end
+         end
          table.insert(modules, module_name_to_file_name(name))
       end,
    }):exec(tree:root())
@@ -49,19 +78,20 @@ function M.get_dependencies(file_name)
    return modules
 end
 
-function M.scan_project(root_dir, include_patts, exclude_patts)
+function M.scan_project(
+root_dir,
+include_patts,
+exclude_patts,
+rename_modules)
+
    local current_dir = lfs.currentdir()
    assert(lfs.chdir(root_dir))
    local deps = {}
-   for fname in fs.match(
-".",
-include_patts or {},
-exclude_patts or {}) do
-
+   for fname in fs.match(".", include_patts, exclude_patts) do
       if fname:sub(1, 2) == "." .. fs.get_path_separator() then
          fname = fname:sub(3, -1)
       end
-      deps[fs.path_concat(root_dir, fname)] = M.get_dependencies(fname)
+      deps[fs.path_concat(root_dir, fname)] = M.get_dependencies(fname, rename_modules)
    end
    assert(lfs.chdir(current_dir))
    return deps
@@ -78,11 +108,12 @@ local function mark_for_update(n, reason)
    n.should_update = true
    n.update_reason = reason or "?"
    for i, v in ipairs(n) do
-      mark_for_update(v, "depends on " .. n.file_name)
+      mark_for_update(v, "Depends on " .. n.file_name)
    end
 end
 
 function DAG:mark_for_update(file_name, reason)
+   log.debug("DAG: marking file '%s' for update", file_name)
    mark_for_update(self.nodes[file_name], reason or "?")
 end
 
@@ -90,9 +121,10 @@ function M.build_dag(
 root_dir,
 include_patts,
 exclude_patts,
-mark_predicate)
+mark_predicate,
+rename_modules)
 
-   local deps = M.scan_project(root_dir, include_patts, exclude_patts)
+   local deps = M.scan_project(root_dir, include_patts, exclude_patts, rename_modules)
    local files_to_be_marked = {}
    local nodes = setmetatable({}, {
       __index = function(self, key)
