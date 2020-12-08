@@ -193,7 +193,6 @@ local build: Command = {
       local fatal_err: string
 
       local dag = builder.build_dag(src_dir, options.include, options.exclude, function(file_name: string): string
-         log.debug("Checking file: %s", file_name)
          if build_dir ~= "." and fs.is_in_dir(build_dir, file_name) then
             log.debug("   %s is in build dir %s", file_name, build_dir)
             return nil
@@ -271,7 +270,7 @@ local build: Command = {
                then
                   local fh = assert(io.open(output_file, "w"))
                   fh:write(tl.pretty_print_ast(res.ast), "\n")
-                  assert(fh:close())
+                  fh:close()
                   log.normal("Wrote %s", disp_output_file)
                else
                   log.normal("Type checked %s", input_file)

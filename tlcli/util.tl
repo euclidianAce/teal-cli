@@ -55,7 +55,7 @@ function M.split(str: string, delimiter: string, patt_disable: boolean): functio
    end
 end
 
-function M.wrap_with<T, K>(func: (function(T): K), arg: T): function(): K
+function M.wrap_with<T, K>(func: function(T): (K), arg: T): function(): K
    local co = coroutine.create(func)
    return function(): K
       return select(2, assert(coroutine.resume(co, arg) as (boolean, K))) as K
