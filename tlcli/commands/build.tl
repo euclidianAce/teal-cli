@@ -1,5 +1,5 @@
 
-local argparse = require("argparse")
+local _argparse = require("argparse") -- This defines a global type which isn't very nice...
 local lfs = require("lfs")
 local tl = require("tl")
 
@@ -152,7 +152,6 @@ local build: Command = {
          if not target_path then
             return ""
          end
-         local retval = false
          if args.update_all then
             return "Forced update"
          end
@@ -214,7 +213,6 @@ local build: Command = {
 
       for input_file, reason in dag:marked_files() do
          local output_file <const> = get_output_file_name(input_file)
-         local ext <const> = fs.get_extension(input_file)
          scheduler.wrap(function()
             check_parents(output_file)
          end)
@@ -232,7 +230,7 @@ local build: Command = {
             step()
             if err then
                exit = 1
-               local start, finish = err:lower():find("^%s*error:?%s*")
+               local _start, finish = err:lower():find("^%s*error:?%s*")
                if finish then
                   err = err:sub(finish+1, -1)
                end
@@ -250,6 +248,7 @@ local build: Command = {
                end
                return
             end
+            local ext <const> = fs.get_extension(input_file)
             if (ext == "tl" or ext == "d.tl")
                and #res.type_errors > 0 then
                exit = 1
@@ -264,7 +263,6 @@ local build: Command = {
 
             step()
             if not args["pretend"] then
-               local ext <const> = fs.get_extension(input_file)
                draw_progress("Writing ", disp_output_file)
                if ext == "tl"
                   or ((ext == "lua" or ext == "d.tl") and build_dir ~= src_dir)
@@ -318,7 +316,7 @@ local build: Command = {
    config = function(opt: string): function
       if opt == "flags" then
          return function(t: {string})
-            for i, v in ipairs(t) do
+            for _, v in ipairs(t) do
                flags[v] = true
             end
          end

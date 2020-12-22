@@ -1,5 +1,5 @@
 
-local log = require("tlcli.log")
+
 local util = require("tlcli.util")
 local lfs = require("lfs")
 
@@ -46,29 +46,29 @@ function fs.get_path_components(pathname)
    return util.generate(fs.path_components(pathname))
 end
 
-local function fix_path_chunk(pathchunk)
-   if pathchunk == ".." then
-      return nil
-   end
-   return pathchunk
-end
-local function fix_path(path)
-   local fixed_path_components = {}
-   local not_relative = string.sub(path, 1, 1) == "/"
-   for comp in fs.path_components(path) do
-      if #comp > 0 then
-         local fixed_comp = fix_path_chunk(comp)
-         if not fixed_comp then
-            return "Error fixing path " .. path .. ", " .. ".." .. path_separator .. " is not allowed"
-         end
-         table.insert(fixed_path_components, fixed_comp)
-      end
-   end
-   if not_relative then
-      table.insert(fixed_path_components, 1, "")
-   end
-   return table.concat(fixed_path_components, path_separator)
-end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 local function insert_comp(tab, comp)
    if #comp > 0 and comp ~= "." then
@@ -123,7 +123,7 @@ function fs.path_parents(pathname)
    local comps = fs.get_path_components(pathname)
    comps[#comps] = nil
    return coroutine.wrap(function()
-      for i, dir in ipairs(comps) do
+      for _, dir in ipairs(comps) do
          current_path = fs.path_concat(current_path, dir)
          coroutine.yield(current_path)
       end
@@ -175,7 +175,7 @@ local function create_matcher(path_pattern)
       local idx = 1
       local s_idx
 
-      for i, comp in ipairs(comps) do
+      for _, comp in ipairs(comps) do
          s_idx, idx = string.find(s, comp, idx)
          if not s_idx then
             return false
@@ -219,10 +219,10 @@ function fs.match(dirname, include, exclude)
    local inc_matchers = {}
    local exc_matchers = {}
 
-   for i, patt in ipairs(include or {}) do
+   for _, patt in ipairs(include or {}) do
       table.insert(inc_matchers, create_matcher(patt))
    end
-   for i, patt in ipairs(exclude or {}) do
+   for _, patt in ipairs(exclude or {}) do
       table.insert(exc_matchers, create_matcher(patt))
    end
 
@@ -302,7 +302,6 @@ function fs.is_absolute(path)
    return path:sub(1, 1) == "/"
 end
 
-local USER_HOME = os.getenv("HOME")
 function fs.is_in_dir(dir_name, file_name)
    if not lfs.attributes(dir_name) then
       return false

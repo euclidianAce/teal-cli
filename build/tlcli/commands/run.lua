@@ -1,5 +1,5 @@
 
-local argparse = require("argparse")
+local _argparse = require("argparse")
 local tl = require("tl")
 
 local cs = require("tlcli.ui.colorscheme")
@@ -64,10 +64,10 @@ local run = {
 
 
 
-      local unpack = unpack or table.unpack
+      local tbl_unpack = unpack or table.unpack
       local script = runner.wrap(function()
          tl.loader()
-         chunk(unpack(script_args))
+         chunk(tbl_unpack(script_args))
       end)
 
       local ok, res = script:run()

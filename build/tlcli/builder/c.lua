@@ -1,7 +1,5 @@
 
 local fs = require("tlcli.fs")
-local log = require("tlcli.log")
-local util = require("tlcli.util")
 local graph = require("tlcli.builder.graph")
 
 

@@ -1,7 +1,5 @@
 
 local fs <const> = require("tlcli.fs")
-local log <const> = require("tlcli.log")
-local util <const> = require("tlcli.util")
 local graph <const> = require("tlcli.builder.graph")
 
 -- TODO: #include statements are easy enough to pattern match that

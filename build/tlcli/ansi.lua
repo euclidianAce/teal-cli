@@ -46,13 +46,13 @@ local bright = {
 for color, esc_seq in pairs(bright) do
    M.bright[color] = function(s)
       if not s then          return "" end
-      return CSI:format(bright[color]) .. s .. reset
+      return CSI:format(esc_seq) .. s .. reset
    end
 end
 for color, esc_seq in pairs(dark) do
    M.dark[color] = function(s)
       if not s then          return "" end
-      return CSI:format(dark[color]) .. s .. reset
+      return CSI:format(esc_seq) .. s .. reset
    end
 end
 

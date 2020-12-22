@@ -1,5 +1,5 @@
 
-local argparse = require("argparse")
+local _argparse = require("argparse")
 
 local cs = require("tlcli.ui.colorscheme")
 local fs = require("tlcli.fs")
@@ -33,7 +33,7 @@ local gen = {
          return 1
       end
       local exit = 0
-      for i, fname in ipairs(args["script"]) do
+      for _, fname in ipairs(args["script"]) do
          local code, err = util.teal.compile(fname)
          if err then
             exit = 1

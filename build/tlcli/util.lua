@@ -22,7 +22,7 @@ function M.array_typechecker(typename)
       if type(x) ~= "table" then
          return nil
       end
-      for i, v in ipairs(x) do
+      for _, v in ipairs(x) do
          if type(v) ~= typename then
             return nil
          end
@@ -105,16 +105,16 @@ local Hook = {}
 
 
 local hooked_funcs = {}
-local function call_hook(name, func)
-   hooked_funcs[func] = {
-      name = name,
-      called = false,
-   }
-   return function(...)
-      hooked_funcs[func].called = true
-      return func(...)
-   end
-end
+
+
+
+
+
+
+
+
+
+
 
 local function f()    return f end
 function M.create_setters(callbacks, options, err_handler)
@@ -131,7 +131,7 @@ end
 
 local function to_set(arr)
    local set = {}
-   for i, v in ipairs(arr) do
+   for _, v in ipairs(arr) do
       set[v] = true
    end
    return set
@@ -147,7 +147,7 @@ end
 
 function M.check_hooks()
    local errs = {}
-   for k, v in pairs(hooked_funcs) do
+   for _, v in pairs(hooked_funcs) do
       if not v.called then
          table.insert(errs, "option " .. v.name .. " was referenced, but not set")
       end
@@ -157,7 +157,7 @@ end
 
 function M.concat_errors(errs)
    local msgs = {}
-   for i, err in ipairs(errs) do
+   for _, err in ipairs(errs) do
       table.insert(
 msgs,
 string.format(
@@ -235,7 +235,6 @@ function M.teal.type_check_file(file_name)
 end
 
 function M.teal.compile(filename, type_check)
-   local lax = filename:match("%.lua$")
    local result = assert(tl.process(filename))
    if #result.syntax_errors > 0 then
       return nil, concat_errors(result.syntax_errors)
@@ -270,7 +269,7 @@ function M.teal.compile_and_write(input_filename, type_check, output_filename)
    if not code then
       return nil, err
    end
-   local ok, werr = fh:write(code)
+   local ok = fh:write(code)
    fh:close()
    if not ok then
       return nil, err
@@ -293,12 +292,10 @@ end
 
 local old_tl_search_module = tl.search_module
 
-local module_name_map = {}
-
 local special_chars = "[%^%$%(%)%%%.%[%]%*%+%-%?]"
 local function make_hijacked_search_module(require_prefix, actual_name)
    return function(module_name)
-      local found
+      local found, fd
       local tried = {}
 
       local altered_module_name = module_name:gsub("^" .. require_prefix:gsub(special_chars, "%%%1"), actual_name)
@@ -306,12 +303,13 @@ local function make_hijacked_search_module(require_prefix, actual_name)
    expected prefix:  '%s'	replacement prefix:  '%s'
    module required:  '%s'	      altered name:  '%s']],
 require_prefix, actual_name, module_name, altered_module_name)
-      local found, fd, tried = old_tl_search_module(altered_module_name, true)
+      found, fd, tried = old_tl_search_module(altered_module_name, true)
       if found then
          return found, fd
       end
       log.queue("debug", "didn't find modified module name, trying regular...")
-      local found, fd, also_tried = old_tl_search_module(module_name, true)
+      local also_tried
+      found, fd, also_tried = old_tl_search_module(module_name, true)
       if found then
          return found, fd
       end

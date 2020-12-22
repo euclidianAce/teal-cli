@@ -1,5 +1,5 @@
 
-local argparse = require("argparse")
+local _argparse = require("argparse")
 
 local cs = require("tlcli.ui.colorscheme")
 local fs = require("tlcli.fs")
@@ -35,7 +35,7 @@ local check = {
 
       local exit = 0
 
-      for i, fname in ipairs(args["script"]) do
+      for _, fname in ipairs(args["script"]) do
          local ok, err = util.teal.type_check_file(fname)
          if not ok then
             log.error(err)
@@ -62,7 +62,7 @@ comps[#comps])
    config = function(opt)
       if opt == "flags" then
          return function(t)
-            for i, v in ipairs(t) do
+            for _, v in ipairs(t) do
                flags[v] = true
             end
          end

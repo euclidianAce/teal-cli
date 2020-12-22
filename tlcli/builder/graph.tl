@@ -1,5 +1,4 @@
 
-local lfs <const> = require("lfs")
 local fs <const> = require("tlcli.fs")
 
 local record Node
@@ -44,7 +43,7 @@ local function mark_for_update(n: Node, reason: string)
    if n.should_update then return end -- if a node is already marked, so are its children
    n.should_update = true
    n.update_reason = reason or "?"
-   for i, v in ipairs(n) do
+   for _, v in ipairs(n) do
       mark_for_update(v, "Depends on " .. n.file_name)
    end
 end
@@ -72,7 +71,7 @@ function graph.build_dag(
 
    for file_name, file_dependencies in pairs(deps) do
       nodes[file_name].file_name = file_name
-      for i, dependency in ipairs(file_dependencies) do
+      for _, dependency in ipairs(file_dependencies) do
          nodes[dependency].file_name = dependency
          table.insert(nodes[dependency], nodes[file_name])
       end
@@ -88,7 +87,7 @@ function graph.build_dag(
       nodes = setmetatable(nodes, nil)
    }, dag_mt)
 
-   for i, v in ipairs(files_to_be_marked) do
+   for _, v in ipairs(files_to_be_marked) do
       dag:mark_for_update(v[1], v[2])
    end
 
@@ -105,14 +104,14 @@ function DAG:marked_files(): function(): (string, string)
          return n
       end
    })
-   for k, v in pairs(self.nodes) do
+   for _, v in pairs(self.nodes) do
       if v.should_update then
          table.insert(nodes[#v], v)
       end
    end
    return coroutine.wrap(function()
       for i = most_dependents, 0, -1 do
-         for k, v in ipairs(nodes[i]) do
+         for __, v in ipairs(nodes[i]) do
             coroutine.yield(v.file_name, v.update_reason)
          end
       end

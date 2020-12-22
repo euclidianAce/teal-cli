@@ -1,5 +1,4 @@
 
-local tl = require("tl")
 local fs = require("tlcli.fs")
 local log = require("tlcli.log")
 local util = require("tlcli.util")

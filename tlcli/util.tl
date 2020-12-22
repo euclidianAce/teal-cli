@@ -22,7 +22,7 @@ function M.array_typechecker(typename: string): function({any}): {any}
       if type(x) ~= "table" then
          return nil
       end
-      for i, v in ipairs(x) do
+      for _, v in ipairs(x) do
          if type(v) ~= typename then
             return nil
          end
@@ -105,16 +105,16 @@ local record Hook
    called: boolean
 end
 local hooked_funcs: {function:Hook} = {}
-local function call_hook(name: string, func: function): function
-   hooked_funcs[func] = {
-      name = name,
-      called = false,
-   }
-   return function(...: any): any...
-      hooked_funcs[func].called = true
-      return func(...)
-   end
-end
+-- local function call_hook(name: string, func: function): function
+   -- hooked_funcs[func] = {
+      -- name = name,
+      -- called = false,
+   -- }
+   -- return function(...: any): any...
+      -- hooked_funcs[func].called = true
+      -- return func(...)
+   -- end
+-- end
 
 local function f(): function return f end
 function M.create_setters(callbacks: {string:function}, options: {string:any}, err_handler: function): function(string): function
@@ -131,7 +131,7 @@ end
 
 local function to_set<T>(arr: {T}): {T:boolean}
    local set: {T:boolean} = {}
-   for i, v in ipairs(arr) do
+   for _, v in ipairs(arr) do
       set[v] = true
    end
    return set
@@ -147,7 +147,7 @@ end
 
 function M.check_hooks(): {string}
    local errs = {}
-   for k, v in pairs(hooked_funcs) do
+   for _, v in pairs(hooked_funcs) do
       if not v.called then
          table.insert(errs, "option " .. v.name .. " was referenced, but not set")
       end
@@ -157,7 +157,7 @@ end
 
 function M.concat_errors(errs: {tl.Error}): string
    local msgs = {}
-   for i, err in ipairs(errs) do
+   for _, err in ipairs(errs) do
        table.insert(
           msgs,
           string.format(
@@ -235,7 +235,6 @@ function M.teal.type_check_file(file_name: string): boolean, string
 end
 
 function M.teal.compile(filename: string, type_check: boolean): string, string
-   local lax = filename:match("%.lua$")
    local result = assert(tl.process(filename))
    if #result.syntax_errors > 0 then
       return nil, concat_errors(result.syntax_errors)
@@ -270,7 +269,7 @@ function M.teal.compile_and_write(input_filename: string, type_check: boolean, o
    if not code then
       return nil, err
    end
-   local ok, werr = fh:write(code)
+   local ok = fh:write(code)
    fh:close()
    if not ok then
       return nil, err
@@ -293,12 +292,10 @@ end
 -- TODO: allow some sort of override in tl itself for this sort of thing?
 local old_tl_search_module = tl.search_module
 
-local module_name_map: {string:string} = {}
-
 local special_chars <const> = "[%^%$%(%)%%%.%[%]%*%+%-%?]"
 local function make_hijacked_search_module(require_prefix: string, actual_name: string): function(string, boolean): string, FILE, {string}
    return function(module_name: string): string, FILE, {string}
-      local found: string
+      local found, fd: string, FILE
       local tried: {string} = {}
 
       local altered_module_name = module_name:gsub("^" .. require_prefix:gsub(special_chars, "%%%1"), actual_name)
@@ -306,12 +303,13 @@ local function make_hijacked_search_module(require_prefix: string, actual_name: 
    expected prefix:  '%s'	replacement prefix:  '%s'
    module required:  '%s'	      altered name:  '%s']],
       require_prefix, actual_name, module_name, altered_module_name)
-      local found, fd, tried = old_tl_search_module(altered_module_name, true)
+      found, fd, tried = old_tl_search_module(altered_module_name, true)
       if found then
          return found, fd
       end
       log.queue("debug", "didn't find modified module name, trying regular...")
-      local found, fd, also_tried = old_tl_search_module(module_name, true)
+      local also_tried: {string}
+      found, fd, also_tried = old_tl_search_module(module_name, true)
       if found then
          return found, fd
       end

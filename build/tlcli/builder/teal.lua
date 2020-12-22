@@ -1,5 +1,4 @@
 
-local lfs = require("lfs")
 local fs = require("tlcli.fs")
 local graph = require("tlcli.builder.graph")
 
@@ -36,7 +35,7 @@ local function make_inserter(modules)
       else
          name = name:match("^%[=*%[(.*)%]=*%]$")
       end
-      for i, mod in ipairs(module_replacements) do
+      for _, mod in ipairs(module_replacements) do
          local new_req = replace_require_prefix(mod.name, mod.source, name)
          if new_req then
             table.insert(modules, module_name_to_file_name(new_req))

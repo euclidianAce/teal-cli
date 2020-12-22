@@ -64,7 +64,7 @@ local function prep()
    if user_cmd_err and not user_cmd_err:match("No such file or directory") then
       log.error("Error loading user commands:\n%s", user_cmd_err)
    end
-   for i, v in ipairs(user_commands) do
+   for _, v in ipairs(user_commands) do
       add_cmd(v)
    end
 
@@ -101,13 +101,13 @@ local function prep()
    loader.load_config()
    local options = loader.load_options()
    util.teal.set_skip_compat53(options.skip_compat53)
-   for i, name in ipairs(options.deps or {}) do
+   for _, name in ipairs(options.deps or {}) do
       fs.add_to_path(fs.path_concat(fs.TYPES_PATH(), name))
    end
-   for i, dir in ipairs(options.include_dir or {}) do
+   for _, dir in ipairs(options.include_dir or {}) do
       fs.add_to_path(dir)
    end
-   for i, modname in ipairs(options.preload_modules or {}) do
+   for _, modname in ipairs(options.preload_modules or {}) do
       util.teal.add_module(modname)
    end
    return args
