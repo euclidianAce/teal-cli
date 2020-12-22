@@ -248,9 +248,13 @@ fs.is_absolute(obj_dir),
                end
                return
             end
+            if #res.warnings > 0 then
+               log.warn(util.concat_errors(res.warnings))
+            end
             local ext = fs.get_extension(input_file)
             if (ext == "tl" or ext == "d.tl") and
                #res.type_errors > 0 then
+
                exit = 1
                if not flags.keep_going then
                   fatal_err = err

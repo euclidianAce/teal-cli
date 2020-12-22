@@ -231,6 +231,9 @@ function M.teal.type_check_file(file_name: string): boolean, string
    if #result.type_errors > 0 then
       return nil, concat_errors(result.type_errors)
    end
+   if #result.warnings > 0 then
+      return true, concat_errors(result.warnings)
+   end
    return true
 end
 

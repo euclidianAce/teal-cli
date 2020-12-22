@@ -44,6 +44,9 @@ local check: Command = {
                break
             end
          else
+            if err then
+               log.warn(err)
+            end
             if #args["script"] as {string} > 1 then
                log.normal(log_str, fname)
             else

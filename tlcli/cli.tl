@@ -94,6 +94,7 @@ local function prep(): Args
    end
    if args.quiet then
       log.disable("normal")
+      log.disable("warn")
       log.disable("verbose")
       log.debug("Quiet logging enabled\n   Disabled normal output\n   Disabled verbose output")
    end

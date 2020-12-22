@@ -31,7 +31,7 @@ end
 local prefixes: {string:Prefix} = setmetatable({
    ["normal"]  = { "Teal ",  "... ", color_with("normal_log") },
    ["verbose"] = { "*Teal ", "... ", color_with("verbose_log") },
-   ["warn"] = { "Warn ", "... ", color_with("warn_log") },
+   ["warn"] = { "Warning ", "... ", color_with("warning_log") },
    ["error"] = { "Error ", "... ", color_with("error_log") },
    ["debug"] = { "=DEBUG= ", "======= ", color_with("debug_log") },
 }, {
