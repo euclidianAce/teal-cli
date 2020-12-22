@@ -7,6 +7,7 @@ local loader = require("tlcli.loader")
 local log = require("tlcli.log")
 local runner = require("tlcli.runner")
 local util = require("tlcli.util")
+local cs = require("tlcli.ui.colorscheme")
 
 local types = require("tlcli.types")
 local Args = types.Args
@@ -25,10 +26,14 @@ local function prep()
    count("*")
 
    par:flag("--skip-compat53", "Skip compat53 insertions.")
-   par:flag("--version", "Print version and exit")
+   par:flag("--version", "Print version and exit.")
+
+
    par:flag("-q --quiet", "Do not print information messages to stdout. Errors may still be printed to stderr.")
-   par:flag("-v --verbose", "Enable verbose logging")
+   par:flag("-v --verbose", "Enable verbose logging.")
    par:flag("-d --debug", "Enable debug logging.")
+
+   par:flag("--no-color", "Disable colors in output.")
 
 
    par:flag("-p --pretend", "Do not write to any files, print what files would be generated.")
@@ -69,6 +74,9 @@ local function prep()
       log.normal(par:get_usage())
       os.exit(1)
    end
+   if args.no_color then
+      cs.disable_colors()
+   end
    if not args.command then
       log.normal(par:get_usage())
       os.exit(1)
@@ -77,6 +85,9 @@ local function prep()
       log.enable("debug")
       log.debug("Debug output enabled")
    end
+   if args.no_color then
+      log.debug("Colors disabled")
+   end
    if args.verbose then
       log.debug("Verbose output enabled")
       log.enable("verbose")
@@ -84,6 +95,7 @@ local function prep()
    if args.quiet then
       log.disable("normal")
       log.disable("verbose")
+      log.debug("Quiet logging enabled\n   Disabled normal output\n   Disabled verbose output")
    end
 
    loader.load_config()

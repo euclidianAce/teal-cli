@@ -3,15 +3,15 @@ local argparse = require("argparse")
 local lfs = require("lfs")
 local tl = require("tl")
 
-local ansi = require("tlcli.ansi")
-local cs = require("tlcli.ui.colorscheme")
-local fs = require("tlcli.fs")
-local log = require("tlcli.log")
-local util = require("tlcli.util")
-local bar = require("tlcli.ui.bar")
-local loader = require("tlcli.loader")
-local task = require("tlcli.task")
-local builder = require("tlcli.builder")
+local ansi <const> = require("tlcli.ansi")
+local cs <const> = require("tlcli.ui.colorscheme")
+local fs <const> = require("tlcli.fs")
+local log <const> = require("tlcli.log")
+local util <const> = require("tlcli.util")
+local bar <const> = require("tlcli.ui.bar")
+local loader <const> = require("tlcli.loader")
+local task <const> = require("tlcli.task")
+local teal_builder <const> = require("tlcli.builder.teal")
 
 local types = require("tlcli.types")
 local Args = types.Args
@@ -69,6 +69,7 @@ local build: Command = {
          log.debug("[build command] hijacking module searching...")
          local mod = global_options.module as {string:string}
          util.hijack_tl_search_module(mod.name, mod.source)
+         teal_builder.add_module(mod.name, mod.source)
       end
 
       -- {{{ Check Parent Dirs
@@ -192,7 +193,7 @@ local build: Command = {
       local total_steps = 0
       local fatal_err: string
 
-      local dag = builder.build_dag(src_dir, options.include, options.exclude, function(file_name: string): string
+      local dag = teal_builder.build_dag(src_dir, options.include, options.exclude, function(file_name: string): string
          if build_dir ~= "." and fs.is_in_dir(build_dir, file_name) then
             log.debug("   %s is in build dir %s", file_name, build_dir)
             return nil
@@ -209,7 +210,7 @@ local build: Command = {
          local out_file = get_output_file_name(file_name)
          log.debug("   Checking if source %s is newer than %s", file_name, out_file)
          return is_source_newer(file_name, out_file)
-      end, {global_options.module as builder.ModuleReplacement})
+      end)
 
       for input_file, reason in dag:marked_files() do
          local output_file <const> = get_output_file_name(input_file)

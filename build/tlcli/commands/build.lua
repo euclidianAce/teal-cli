@@ -11,7 +11,7 @@ local util = require("tlcli.util")
 local bar = require("tlcli.ui.bar")
 local loader = require("tlcli.loader")
 local task = require("tlcli.task")
-local builder = require("tlcli.builder")
+local teal_builder = require("tlcli.builder.teal")
 
 local types = require("tlcli.types")
 local Args = types.Args
@@ -69,6 +69,7 @@ local build = {
          log.debug("[build command] hijacking module searching...")
          local mod = global_options.module
          util.hijack_tl_search_module(mod.name, mod.source)
+         teal_builder.add_module(mod.name, mod.source)
       end
 
 
@@ -192,7 +193,7 @@ fs.is_absolute(obj_dir),
       local total_steps = 0
       local fatal_err
 
-      local dag = builder.build_dag(src_dir, options.include, options.exclude, function(file_name)
+      local dag = teal_builder.build_dag(src_dir, options.include, options.exclude, function(file_name)
          if build_dir ~= "." and fs.is_in_dir(build_dir, file_name) then
             log.debug("   %s is in build dir %s", file_name, build_dir)
             return nil
@@ -209,7 +210,7 @@ fs.is_absolute(obj_dir),
          local out_file = get_output_file_name(file_name)
          log.debug("   Checking if source %s is newer than %s", file_name, out_file)
          return is_source_newer(file_name, out_file)
-      end, { global_options.module })
+      end)
 
       for input_file, reason in dag:marked_files() do
          local output_file = get_output_file_name(input_file)

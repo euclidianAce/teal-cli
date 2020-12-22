@@ -352,6 +352,20 @@ function fs.find_project_root()
    return orig_dir
 end
 
+
+
+
+
+
+
+function fs.do_in(dir_name, f)
+   local current_dir = lfs.currentdir()
+   assert(lfs.chdir(dir_name))
+   local res = f()
+   assert(lfs.chdir(current_dir))
+   return res
+end
+
 local file_content_cache = setmetatable({}, { __mode = "kv" })
 function fs.read(filename)
    if file_content_cache[filename] then

@@ -1,5 +1,5 @@
 
-local ansi = require("tlcli.ansi")
+local cs = require("tlcli.ui.colorscheme")
 
 local M = {}
 
@@ -13,20 +13,38 @@ local streams = setmetatable({
    ["warn"] = io.stderr,
    ["debug"] = io.stderr,
 }, {
-   __index = function(_, key)
+   __index = function()
       return io.stdout
    end,
 })
 
-local b = ansi.bright
-
+local alignment = 12
+local function align(s)
+   return (" "):rep(alignment - #s) .. s
+end
+local Prefix = {}
+local function color_with(name)
+   return function(s)
+      return cs.color(name, s)
+   end
+end
 local prefixes = setmetatable({
-   ["normal"] = { b.cyan("  Teal") .. ": ", b.cyan("   ...  ") },
-   ["verbose"] = { b.cyan(" *Teal") .. ": ", b.cyan("   ...  ") },
-   ["warn"] = { b.yellow("  Warn") .. ": ", b.yellow("   ...  ") },
-   ["error"] = { b.red(" Error") .. ": ", b.red("   ...  ") },
-   ["debug"] = { b.green(" DEBUG") .. ": ", b.green("   ...  ") },
-}, { __index = function()       return { "        ", "        " } end })
+   ["normal"] = { "Teal ", "... ", color_with("normal_log") },
+   ["verbose"] = { "*Teal ", "... ", color_with("verbose_log") },
+   ["warn"] = { "Warn ", "... ", color_with("warn_log") },
+   ["error"] = { "Error ", "... ", color_with("error_log") },
+   ["debug"] = { "=DEBUG= ", "======= ", color_with("debug_log") },
+}, {
+   __index = function()
+      return {
+         "???:",
+         "",
+         function(x)
+            return x
+         end,
+      }
+   end,
+})
 
 local QueuedMessage = {}
 
@@ -47,13 +65,16 @@ function M.queue(level, fmt, ...)
    })
 end
 
+local function color_and_align(level, s)
+   return prefixes[level][3](align(s))
+end
 local function raw_log(level, fmt, ...)
    local str = string.format(fmt .. "\n", ...)
    local lines = str:gmatch(".-\n")
 
-   streams[level]:write(prefixes[level][1], lines())
+   streams[level]:write(color_and_align(level, prefixes[level][1]), lines())
    for line in lines do
-      streams[level]:write(prefixes[level][2], line)
+      streams[level]:write(color_and_align(level, prefixes[level][2]), line)
    end
 end
 
@@ -72,7 +93,7 @@ function M.flush()
    queue = {}
 end
 
-function M.set_prefix(level, new_prefix)    prefixes[level] = new_prefix end
+
 
 function M.enable(level)    enabled[level] = true end
 function M.disable(level)    enabled[level] = nil end

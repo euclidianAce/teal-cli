@@ -6,16 +6,29 @@ global type Colorscheme = {string:Colorizer}
 local M = {}
 
 local default: Colorscheme = {
-   debug = ansi.bright.green as Colorizer,
-   dir_name = ansi.bright.blue as Colorizer,
-   error = ansi.bright.red as Colorizer,
-   file_name = ansi.bright.yellow as Colorizer,
-   line_number = ansi.bright.magenta as Colorizer,
-   normal = ansi.bright.white as Colorizer,
-   special = ansi.bright.magenta as Colorizer,
+   dir_name = ansi.bright.blue,
+   normal_log = ansi.bright.cyan,
+   verbose_log = ansi.bright.cyan,
+   error_log = ansi.bright.red,
+   warning_log = ansi.bright.yellow,
+   debug_log = ansi.bright.green,
+
+   file_name = ansi.bright.yellow,
+   line_number = ansi.bright.magenta,
+   normal = ansi.bright.white,
+   special = ansi.bright.magenta,
 }
 
 local current_scheme = default
+
+local no_color_scheme: Colorscheme = setmetatable({}, {
+   __index = function(_: table, _: string): Colorizer
+      return function(s: string): string return s end
+   end
+})
+function M.disable_colors()
+   current_scheme = no_color_scheme
+end
 
 function M.color(c: string, str: string): string
    return (current_scheme[c] or ansi.bright.white)(str)

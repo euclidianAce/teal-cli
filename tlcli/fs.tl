@@ -352,6 +352,20 @@ function fs.find_project_root(): string
    return orig_dir
 end
 
+-- TODO(upstream:teal): make type system stronger to allow for what I want here
+-- which is basically a decorator style thing
+-- or some sort of guard statement?
+-- local function f<T, K>(foo: T): K where T is function, K is unpacked retsof T
+--    ...
+-- end
+function fs.do_in<T>(dir_name: string, f: function(): T): T
+   local current_dir <const> = lfs.currentdir()
+   assert(lfs.chdir(dir_name))
+   local res <const> = f()
+   assert(lfs.chdir(current_dir))
+   return res
+end
+
 local file_content_cache: {string:string} = setmetatable({}, { __mode = "kv" })
 function fs.read(filename: string): string, string
    if file_content_cache[filename] then

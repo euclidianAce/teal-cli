@@ -1,5 +1,5 @@
 
-local ansi = require("tlcli.ansi")
+local cs = require("tlcli.ui.colorscheme")
 
 local M = {}
 
@@ -13,20 +13,38 @@ local streams: {string:FILE} = setmetatable({
    ["warn"] = io.stderr,
    ["debug"] = io.stderr,
 }, {
-   __index = function(_: {string:FILE}, key: string): FILE
+   __index = function(): FILE
       return io.stdout
    end
 })
 
-local b = ansi.bright
-
-local prefixes: {string:{string}} = setmetatable({
-   ["normal"]   = {b.cyan   "  Teal" .. ": ", b.cyan    "   ...  " },
-   ["verbose"]  = {b.cyan   " *Teal" .. ": ", b.cyan    "   ...  " },
-   ["warn"]     = {b.yellow "  Warn" .. ": ", b.yellow  "   ...  " },
-   ["error"]    = {b.red    " Error" .. ": ", b.red     "   ...  " },
-   ["debug"]    = {b.green  " DEBUG" .. ": ", b.green   "   ...  " },
-}, { __index = function(): {string} return {"        ", "        "} end })
+local alignment <const> = 12
+local function align(s: string): string
+   return (" "):rep(alignment - #s) .. s
+end
+local type Prefix = {string, string, Colorizer}
+local function color_with(name: string): Colorizer
+   return function(s: string): string
+      return cs.color(name, s)
+   end
+end
+local prefixes: {string:Prefix} = setmetatable({
+   ["normal"]  = { "Teal ",  "... ", color_with("normal_log") },
+   ["verbose"] = { "*Teal ", "... ", color_with("verbose_log") },
+   ["warn"] = { "Warn ", "... ", color_with("warn_log") },
+   ["error"] = { "Error ", "... ", color_with("error_log") },
+   ["debug"] = { "=DEBUG= ", "======= ", color_with("debug_log") },
+}, {
+   __index = function(): Prefix
+      return {
+         "???:",
+         "",
+         function(x: string): string
+            return x
+         end
+      }
+   end
+})
 
 local record QueuedMessage
    level: string
@@ -47,13 +65,16 @@ function M.queue(level: string, fmt: string, ...: any)
    })
 end
 
+local function color_and_align(level: string, s: string): string
+   return prefixes[level][3](align(s))
+end
 local function raw_log(level: string, fmt: string, ...: any)
    local str = string.format(fmt .. "\n", ...)
    local lines = str:gmatch(".-\n")
 
-   streams[level]:write(prefixes[level][1], lines())
+   streams[level]:write(color_and_align(level, prefixes[level][1]), lines())
    for line in lines do
-      streams[level]:write(prefixes[level][2], line)
+      streams[level]:write(color_and_align(level, prefixes[level][2]), line)
    end
 end
 
@@ -72,7 +93,7 @@ function M.flush()
    queue = {}
 end
 
-function M.set_prefix(level: string, new_prefix: {string}) prefixes[level] = new_prefix end
+-- function M.set_prefix(level: string, new_prefix: {string}) prefixes[level] = new_prefix end
 
 function M.enable(level: string)  enabled[level] = true end
 function M.disable(level: string) enabled[level] = nil end
